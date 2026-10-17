@@ -1,3 +1,15 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Golf Teşhis">
+<meta name="theme-color" content="#0F6A80">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%}</style>
+</head>
+<body>
 <title>Golf Teşhis</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +35,7 @@
   --ok:#62C285; --ok-soft:#1C3325; --warn:#E3AA4E; --warn-soft:#3A2D16; --crit:#F0766A; --crit-soft:#3C1E1B;
   color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
 .wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
@@ -156,15 +169,15 @@ a.btn.wa{background:var(--ok);border-color:var(--ok);color:#fff}
   </header>
 
   <nav class="mtabs" role="tablist" aria-label="Bölümler">
-    <button class="mtab" role="tab" data-m="belirti" aria-selected="true">Belirtiler</button>
-    <button class="mtab" role="tab" data-m="telefon" aria-selected="false">Telefon testi</button>
+    <button class="mtab" role="tab" data-m="telefon" aria-selected="true">Otomatik test</button>
+    <button class="mtab" role="tab" data-m="belirti" aria-selected="false">Belirtiler</button>
     <button class="mtab" role="tab" data-m="rapor" aria-selected="false">Rapor</button>
     <button class="mtab" role="tab" data-m="kit" aria-selected="false">Kit</button>
   </nav>
 
   <!-- ============ BELİRTİLER ============ -->
-  <section id="m-belirti" class="section">
-    <p class="intro">Aracı dinleyin, kısa bir sürüş yapın, gördüğünüz belirtilere dokunun. Uygulama olası arızaları en olasıdan başlayarak sıralar.</p>
+  <section id="m-belirti" class="section" hidden>
+    <p class="intro">Otomatik testin ölçemediği şeyler için (koku, duman, fren, direksiyon, müşteri şikâyeti) gördüğünüz belirtilere dokunun. Olası arızalar, otomatik test sonuçlarıyla birlikte sıralanır.</p>
     <div class="teshis">
       <div id="belirtiListe"></div>
       <aside class="panel sonuc" id="sonuclar" aria-live="polite">
@@ -178,35 +191,73 @@ a.btn.wa{background:var(--ok);border-color:var(--ok);color:#fff}
   </section>
 
   <!-- ============ TELEFON TESTİ ============ -->
-  <section id="m-telefon" class="section" hidden>
-    <p class="intro">Kit olmadan, telefonun kendi titreşim sensörü ve mikrofonuyla ön kontrol. Sonuçlar yaklaşıktır; aynı testi sağlam bir araçta da yapıp karşılaştırırsanız daha anlamlı olur.</p>
+  <section id="m-telefon" class="section">
+    <p class="intro">Telefon motor sesinden devri, GPS'ten hızı, hareket sensöründen titreşimi ölçer ve sonucu kendisi çıkarır. Testi düz ve boş bir yolda yapın. Değerler kit kadar kesin değildir; aynı aracın sağlam hâliyle karşılaştırınca daha isabetli olur.</p>
     <p class="note err" id="sensorUyari" hidden></p>
+
+    <div class="panel">
+      <h2>Hazırlık</h2>
+      <div class="form">
+        <div class="field"><label class="label" for="oProfil">Araç</label><select id="oProfil"></select></div>
+        <div class="field"><label class="label" for="oVmax">Normal son hız (km/s)</label><input type="number" id="oVmax" min="10" max="40" inputmode="numeric"></div>
+        <div class="field"><label class="label" for="oSil">Motor</label><select id="oSil"><option value="1">Tek silindir (çoğu golf aracı)</option><option value="2">İki silindir</option></select></div>
+        <div class="field"><label class="label" for="oCarpan">Devir okuması</label><select id="oCarpan"><option value="1">Normal</option><option value="2">Yarısını gösteriyor (×2)</option><option value="0.5">İki katını gösteriyor (÷2)</option></select></div>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="btnSensor">Sensörleri aç</button>
+        <span class="note" id="sensorDurum">Mikrofon, hareket ve konum izni istenecek.</span>
+      </div>
+      <div class="olcum">
+        <div><span class="label">Motor devri</span><b id="cRpm">—</b></div>
+        <div><span class="label">Hız (GPS)</span><b id="cHiz">—</b></div>
+        <div><span class="label">Titreşim</span><b id="cTit">—</b></div>
+      </div>
+      <p class="note">Motoru çalıştırıp gaza hafifçe basın: devir 1.300–2.000 civarında görünmeli. Yarısı veya iki katı çıkıyorsa "Devir okuması"nı değiştirin.</p>
+    </div>
+
     <div class="testler">
-      <div class="panel">
-        <h2>Titreşim testi</h2>
+      <div class="panel" id="p-kalkis">
+        <div class="label">Adım 1</div>
+        <h2>Kalkış ve hızlanma</h2>
         <ol class="steps">
-          <li>Telefonu arka kasaya veya koltuğa, ekranı yukarı bakacak şekilde düz koyun.</li>
-          <li>Aşağıya yaklaşık hızınızı yazın, "Başlat"a basın.</li>
-          <li>20 saniye düz yolda sabit hızla gidin.</li>
+          <li>Araç dursun. Telefonu koltuğa, ekranı yukarı bakacak şekilde koyun.</li>
+          <li>"Başlat"a basın, 2–3 saniye bekleyin, sonra gaza sonuna kadar basın.</li>
+          <li>Son hıza çıkın ve sayaç bitene kadar tam gazda devam edin (25 sn).</li>
         </ol>
-        <div class="row">
-          <div class="field" style="flex:0 1 150px"><label class="label" for="titHiz">Hız (km/s)</label><input type="number" id="titHiz" value="15" min="3" max="40" inputmode="numeric"></div>
-          <button class="btn primary" id="btnTit">Titreşim testini başlat</button>
-        </div>
-        <div class="sayac" id="titSayac" hidden></div>
-        <div id="titSonuc"></div>
+        <div class="row"><button class="btn primary oBaslat" data-a="kalkis">Başlat</button><span class="sayac" id="say-kalkis" hidden></span></div>
+        <div id="sonuc-kalkis"></div>
       </div>
-      <div class="panel">
-        <h2>Ses testi</h2>
+      <div class="panel" id="p-sabit">
+        <div class="label">Adım 2</div>
+        <h2>Sabit hız</h2>
         <ol class="steps">
-          <li>Motoru çalıştırın, araç dururken gaza hafifçe basın veya arka tekerler havadayken sabit gaz verin.</li>
-          <li>Telefonun mikrofonunu kayış ve kavramaya 30–50 cm uzaktan tutun.</li>
-          <li>"Başlat"a basın, 10 saniye kaydeder.</li>
+          <li>Aracı hızlandırıp sabit gazda düz gidin.</li>
+          <li>"Başlat"a basın, 20 saniye aynı gazda devam edin.</li>
         </ol>
-        <div class="row"><button class="btn primary" id="btnSes">Ses testini başlat</button></div>
-        <div class="sayac" id="sesSayac" hidden></div>
-        <div id="sesSonuc"></div>
+        <div class="row"><button class="btn primary oBaslat" data-a="sabit">Başlat</button><span class="sayac" id="say-sabit" hidden></span></div>
+        <div id="sonuc-sabit"></div>
       </div>
+      <div class="panel" id="p-ses">
+        <div class="label">Adım 3 · isteğe bağlı</div>
+        <h2>Kayış ve motor sesi</h2>
+        <ol class="steps">
+          <li>Arka tekerleri krikoyla kaldırın, sabit hafif gaz verin. Kriko yoksa bu adımı atlayın.</li>
+          <li>Telefonu kayış tarafına 30–50 cm uzaktan tutun, "Başlat"a basın (10 sn).</li>
+        </ol>
+        <div class="row"><button class="btn primary oBaslat" data-a="ses">Başlat</button><span class="sayac" id="say-ses" hidden></span></div>
+        <div id="sonuc-ses"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="otoPanel">
+      <div class="row" style="justify-content:space-between"><h2>Test sonucu</h2><span class="meta" id="otoTarih"></span></div>
+      <div class="list" id="otoBulgular"></div>
+      <div class="row">
+        <button class="btn" id="btnRef">Bu aracı sağlam referans olarak kaydet</button>
+        <button class="btn" id="btnOrnek">Örnek sonuç göster</button>
+        <button class="btn" id="btnOtoSil">Sonuçları sil</button>
+      </div>
+      <p class="note" id="refNot"></p>
     </div>
   </section>
 
@@ -927,7 +978,7 @@ const GRUPLAR = [
   ["m3","Tekliyor, düzensiz çalışıyor"],["m4","Rölantide stop ediyor"],
   ["m5","Egzozdan siyah duman"],["m6","Egzozdan mavi veya beyaz duman"],
   ["m7","Motor aşırı ısınıyor, yanık yağ kokusu"],["m8","Patlama / geri tepme sesi"],
-  ["m9","Yakıt tüketimi arttı"],["m10","Motordan tıkırtı (supap sesi)"]]},
+  ["m9","Yakıt tüketimi arttı"],["m10","Motordan tıkırtı (supap sesi)"],["m11","Rölantide araç dururken titriyor"]]},
  {ad:"Akü ve elektrik", l:[
   ["e1","Akü sürekli bitiyor"],["e2","Farlar sönük, gösterge düşük"]]},
  {ad:"Şanzıman ve arka aks", l:[
@@ -946,7 +997,7 @@ const ARIZA = {
   k:["Kayış genişliğini yeni kayışla karşılaştırın; belirgin darsa değiştirin","Kayışta parlama, çatlak, yanık izi","Kavrama yüzeylerindeki yağ ve kiri fren temizleyiciyle temizleyin"]},
  onkav:{ad:"Ön kavrama aşınmış veya kirli", sis:"CVT", w:{s2:3,s3:3,s1:1,s5:1,s6:2,s8:1},
   k:["Ön kavrama ağırlık ve makaralarında aşınma","Burçlar sıkışmış olabilir; söküp temizleyin","Kavrama yüzeylerinde basamaklanma"]},
- onkav_yay:{ad:"Ön kavrama yayı zayıf veya kırık", sis:"CVT", w:{s4:3,s2:1},
+ onkav_yay:{ad:"Ön kavrama yayı zayıf veya kırık", sis:"CVT", w:{s4:3,s2:1,m11:1},
   k:["Ön kavrama yayını kontrol edin","Rölanti devri çok yüksek mi; gaz teli ayarı"]},
  arkav:{ad:"Arka kavrama yayı veya rampası sorunlu", sis:"CVT", w:{s1:2,s5:3,s6:1,s2:1},
   k:["Arka kavrama yayı ve rampa (cam) burçları","Hareketli kasnak mil üzerinde sıkışmış olabilir","Kavrama yüzeyine yağ sürülmemeli"]},
@@ -954,15 +1005,15 @@ const ARIZA = {
   k:["Regülatör teli ve ayar somunu","Gaz teli tam açılıyor mu"]},
  gazsw:{ad:"Gaz pedalı şalteri / gaz teli", sis:"Elektrik", w:{m1:2,m4:1,s6:1},
   k:["Gaz pedalındaki mikroşalter (pedala basınca motoru çalıştıran)","Gaz teli gerginliği","Pedal yay ve bağlantıları"]},
- karb:{ad:"Karbüratör kirli veya jet tıkalı", sis:"Yakıt", w:{m3:3,m4:3,m1:2,m5:2,m8:2,m9:2,s5:1,s6:1},
+ karb:{ad:"Karbüratör kirli veya jet tıkalı", sis:"Yakıt", w:{m3:3,m4:3,m1:2,m5:2,m8:2,m9:2,s5:1,s6:1,m11:1},
   k:["Karbüratörü söküp jetleri temizleyin","Şamandıra seviyesi","Emme manifoldunda hava kaçağı"]},
  hava:{ad:"Hava filtresi tıkalı", sis:"Yakıt", w:{m5:3,m9:2,s5:1,s6:1,m3:1},
   k:["Hava filtresini çıkarıp kontrol edin, gerekirse değiştirin","Hava kutusu ve hortumlarında tıkanıklık"]},
- buji:{ad:"Buji, buji kablosu veya bobin", sis:"Ateşleme", w:{m3:3,m1:2,m8:2,m4:1,s5:1},
+ buji:{ad:"Buji, buji kablosu veya bobin", sis:"Ateşleme", w:{m3:3,m1:2,m8:2,m4:1,s5:1,m11:1},
   k:["Bujide kurum, yağlanma, elektrot aralığı","Buji kablosu ve başlığında çatlak","Bobin hava aralığı ve kıvılcım testi"]},
  yakit:{ad:"Yakıt pompası veya yakıt filtresi", sis:"Yakıt", w:{m1:2,m3:2,s5:2,m4:1},
   k:["Yakıt filtresi tıkalı mı","Vakum (diyafram) yakıt pompası ve hortumları","Depoda su veya tortu"]},
- supap:{ad:"Supap ayarı bozuk", sis:"Motor", w:{m10:3,m8:2,m1:2,m3:1,s5:1},
+ supap:{ad:"Supap ayarı bozuk", sis:"Motor", w:{m10:3,m8:2,m1:2,m3:1,s5:1,m11:1},
   k:["Supap boşluğunu katalog değerine göre ayarlayın","Golf motorlarında belirli çalışma saatlerinde ayar gerekir"]},
  segman:{ad:"Motor yağ yakıyor (segman / supap keçesi)", sis:"Motor", w:{m6:3,s5:1,m1:1,m7:1},
   k:["Kompresyon testi yapın","Yağ eksiltme miktarını takip edin","Karter havalandırma hortumu"]},
@@ -990,7 +1041,7 @@ const ARIZA = {
   k:["Amortisörde yağ sızıntısı","Makas burçları ve askı"]},
  balans:{ad:"Teker balansı, jant veya lastik", sis:"Yürüyen", w:{f4:3,f3:1},
   k:["Lastik basınçları eşit mi","Jant eğriliği","Lastikte düzensiz aşınma"]},
- takoz:{ad:"Motor takozu", sis:"Motor", w:{s2:2,f4:1,t2:1},
+ takoz:{ad:"Motor takozu", sis:"Motor", w:{s2:2,f4:1,t2:1,m11:3},
   k:["Motor takozlarında yırtılma","Motor bağlantı cıvataları"]}
 };
 
@@ -1004,6 +1055,7 @@ function adaylarHesapla(){
   const l=[];
   for(const [id,a] of Object.entries(ARIZA)){
     let p=0,n=0; for(const s of secili){ if(a.w[s]){p+=a.w[s];n++;} }
+    for(const b of (oto.ornek?[]:otoBulgular())){ const i=b.ariza.indexOf(id); if(i>=0){ p+= i===0?3:2; n++; } }
     if(p>0) l.push({id,a,p,n});
   }
   l.sort((x,y)=>y.p-x.p||y.n-x.n);
@@ -1012,11 +1064,11 @@ function adaylarHesapla(){
 function etiket(r){ return r>=0.75?"En olası":r>=0.45?"Olası":"Daha düşük"; }
 function sonucCiz(){
   const l=adaylarHesapla(), top=l.length?l[0].p:1;
-  $("adaylar").innerHTML = !secili.size ? `<div class="empty">Henüz belirti seçilmedi. Soldaki listeden araçta gördüklerinize dokunun.</div>`
+  $("adaylar").innerHTML = (!secili.size && !l.length) ? `<div class="empty">Henüz belirti seçilmedi veya test yapılmadı. Araçta gördüklerinize dokunun ya da Otomatik testi yapın.</div>`
    : !l.length ? `<div class="empty">Bu belirtiler için kayıtlı arıza yok.</div>`
    : l.map((x,i)=>{ const r=x.p/top; return `<div class="aday"><div class="top"><h3>${x.a.ad}</h3><span class="chip ${r>=0.75?"kritik":r>=0.45?"uyari":"bilgi"}">${etiket(r)}</span></div>
       <div class="bar"><i style="width:${Math.round(r*100)}%"></i></div>
-      <div class="meta">${x.a.sis} · ${x.n} belirtiyle uyumlu</div>
+      <div class="meta">${x.a.sis} · ${x.n} belirti / test bulgusuyla uyumlu</div>
       <details${i===0?" open":""}><summary>Bakılacak yerler</summary><ul>${x.a.k.map(t=>`<li>${t}</li>`).join("")}</ul></details></div>`; }).join("");
   const ab=$("altbar");
   ab.classList.toggle("goster", secili.size>0 && aktifM==="belirti");
@@ -1033,7 +1085,7 @@ $("btnAltGit").addEventListener("click",()=>$("sonuclar").scrollIntoView({behavi
 function belirtiEkle(ids){ ids.forEach(k=>secili.add(k)); yaz("belirtiler",[...secili]); belirtiCiz(); sonucCiz(); }
 
 /* ================= ANA SEKMELER ================= */
-let aktifM="belirti";
+let aktifM="telefon";
 document.querySelectorAll(".mtab").forEach(t=>t.addEventListener("click",()=>{
   aktifM=t.dataset.m;
   document.querySelectorAll(".mtab").forEach(x=>x.setAttribute("aria-selected",x===t?"true":"false"));
@@ -1043,113 +1095,329 @@ document.querySelectorAll(".mtab").forEach(t=>t.addEventListener("click",()=>{
   sonucCiz();
 }));
 
-/* ================= TELEFON TESTLERİ ================= */
-const testSonuc = oku("testler",{});
-function sensorHata(ne){
+/* ================= OTOMATİK TELEFON TESTİ ================= */
+const OPROF = {
+  clubcar:{ad:"Club Car DS / Precedent", vmax:20},
+  ezgo:{ad:"E-Z-GO TXT / RXV", vmax:21},
+  yamaha:{ad:"Yamaha G16 / G22 / Drive", vmax:20},
+  diger:{ad:"Diğer golf aracı", vmax:20}
+};
+const oAyar = Object.assign({profil:"clubcar", vmax:20, sil:"1", carpan:"1"}, oku("oAyar",{}));
+if(!OPROF[oAyar.profil]) oAyar.profil="clubcar";
+$("oProfil").innerHTML = Object.entries(OPROF).map(([k,v])=>`<option value="${k}">${v.ad}</option>`).join("");
+$("oProfil").value=oAyar.profil; $("oVmax").value=oAyar.vmax; $("oSil").value=oAyar.sil; $("oCarpan").value=oAyar.carpan;
+$("oProfil").addEventListener("change",()=>{ oAyar.profil=$("oProfil").value; oAyar.vmax=OPROF[oAyar.profil].vmax; $("oVmax").value=oAyar.vmax; yaz("oAyar",oAyar); otoCiz(); });
+["oVmax","oSil","oCarpan"].forEach(id=>$(id).addEventListener("change",()=>{ oAyar.vmax=parseFloat($("oVmax").value)||20; oAyar.sil=$("oSil").value; oAyar.carpan=$("oCarpan").value; yaz("oAyar",oAyar); }));
+const refler = oku("refler",{});
+
+/* ---- Devir tahmini: ses zarfının (envelope) otokorelasyonu ----
+   4 zamanlı motorda her silindir 2 turda bir patlar: patlama frekansı = devir/60 × silindir/2 */
+const ENV_HZ = 800;
+function devirTahmin(env, silindir, carpan){
+  const n=env.length; if(n<ENV_HZ*0.6) return {rpm:null, guven:0};
+  let m=0; for(let i=0;i<n;i++) m+=env[i]; m/=n;
+  const x=new Float64Array(n); let e=0; for(let i=0;i<n;i++){ x[i]=env[i]-m; e+=x[i]*x[i]; }
+  if(e<1e-12) return {rpm:null, guven:0};
+  const darbeTur = silindir/2;
+  const fLo = 800/60*darbeTur, fHi = 4800/60*darbeTur;
+  const lMin=Math.max(2,Math.floor(ENV_HZ/fHi)), lMax=Math.min(Math.floor(n/2),Math.ceil(ENV_HZ/fLo));
+  const r=new Float64Array(lMax+2);
+  for(let L=lMin-1; L<=lMax+1; L++){
+    let s=0,a=0,b=0; for(let i=0;i+L<n;i++){ s+=x[i]*x[i+L]; a+=x[i]*x[i]; b+=x[i+L]*x[i+L]; }
+    r[L]= (a>0&&b>0) ? s/Math.sqrt(a*b) : 0;
+  }
+  const tepeler=[]; let en=0;
+  for(let L=lMin; L<=lMax; L++) if(r[L]>r[L-1] && r[L]>=r[L+1] && r[L]>0){ tepeler.push(L); if(r[L]>en) en=r[L]; }
+  if(!tepeler.length || en<0.2) return {rpm:null, guven:Math.max(0,en)};
+  const L=tepeler.find(l=>r[l]>=0.9*en);
+  const d=r[L-1]-2*r[L]+r[L+1]; const kay = d<0 ? 0.5*(r[L-1]-r[L+1])/d : 0;
+  const f=ENV_HZ/(L+kay);
+  return {rpm: f*60/darbeTur*carpan, guven:en};
+}
+
+const S = {acik:false, mic:false, mot:false, gps:false, ctx:null, an:null, akis:null,
+  env:new Float32Array(ENV_HZ*2), envI:0, envN:0, hp:{x:0,y:0}, top:0, say:0, hop:60,
+  rpmGecmis:[], rpm:null, rpmT:0, guven:0, v:null, vT:0, gpsAcc:null, sonKonum:null,
+  accSS:0, accN:0, accSonT:0, hareket:null, kayit:null, kilit:null};
+
+function envSon(n){ n=Math.min(n,S.envN); const o=new Float32Array(n); for(let i=0;i<n;i++) o[i]=S.env[(S.envI-n+i+S.env.length)%S.env.length]; return o; }
+function medyan(a){ if(!a.length) return null; const b=[...a].sort((x,y)=>x-y); const k=b.length>>1; return b.length%2?b[k]:(b[k-1]+b[k])/2; }
+function ortSapma(a){ if(a.length<2) return {o:a[0]||0,s:0}; const o=a.reduce((x,y)=>x+y,0)/a.length; return {o, s:Math.sqrt(a.reduce((x,y)=>x+(y-o)*(y-o),0)/a.length)}; }
+
+$("btnSensor").addEventListener("click", sensorAc);
+async function sensorAc(){
+  if(S.acik) return true;
+  const durum=$("sensorDurum"); durum.textContent="İzinler isteniyor…";
+  let ctx=null;
+  try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC){ ctx=new AC(); ctx.resume(); } }catch(e){}
+  const hareketIzin = (typeof DeviceMotionEvent!=="undefined" && typeof DeviceMotionEvent.requestPermission==="function")
+    ? DeviceMotionEvent.requestPermission().catch(()=>"denied") : Promise.resolve(typeof DeviceMotionEvent!=="undefined"?"granted":"denied");
+  const micIzin = (ctx && navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+    ? navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).catch(()=>null) : Promise.resolve(null);
+  const [h, akis] = await Promise.all([hareketIzin, micIzin]);
+
+  if(akis && ctx){
+    S.ctx=ctx; S.akis=akis; S.mic=true;
+    const src=ctx.createMediaStreamSource(akis);
+    S.an=ctx.createAnalyser(); S.an.fftSize=4096; S.an.smoothingTimeConstant=0; src.connect(S.an);
+    const proc=ctx.createScriptProcessor(4096,1,1);
+    S.hop=Math.max(1,Math.round(ctx.sampleRate/ENV_HZ));
+    const rc=1/(2*Math.PI*150), dt=1/ctx.sampleRate, ka=rc/(rc+dt);
+    proc.onaudioprocess = ev=>{
+      const x=ev.inputBuffer.getChannelData(0); let hx=S.hp.x, hy=S.hp.y;
+      for(let i=0;i<x.length;i++){
+        hy=ka*(hy+x[i]-hx); hx=x[i];
+        S.top+=Math.abs(hy); S.say++;
+        if(S.say>=S.hop){ S.env[S.envI]=S.top/S.say; S.envI=(S.envI+1)%S.env.length; if(S.envN<S.env.length) S.envN++; S.top=0; S.say=0; }
+      }
+      S.hp.x=hx; S.hp.y=hy;
+    };
+    src.connect(proc); proc.connect(ctx.destination);
+    setInterval(()=>{
+      const t=devirTahmin(envSon(ENV_HZ), +oAyar.sil, +oAyar.carpan); S.guven=t.guven;
+      const simdi=performance.now();
+      if(t.rpm){ S.rpmGecmis.push([simdi,t.rpm]); }
+      S.rpmGecmis=S.rpmGecmis.filter(r=>simdi-r[0]<1200);
+      const m=medyan(S.rpmGecmis.map(r=>r[1]));
+      if(m && S.rpmGecmis.length>=3){ S.rpm=m; S.rpmT=simdi; }
+    },150);
+  } else if(ctx){ try{ctx.close()}catch(e){} }
+
+  if(h==="granted"){
+    let gx=0,gy=0,gz=0,ilk=true, gelen=false;
+    window.addEventListener("devicemotion", ev=>{
+      let a=ev.acceleration, x,y,z;
+      if(a && a.x!=null){ x=a.x;y=a.y;z=a.z; }
+      else { const g=ev.accelerationIncludingGravity; if(!g||g.x==null) return;
+        if(ilk){gx=g.x;gy=g.y;gz=g.z;ilk=false} gx+=(g.x-gx)*0.02; gy+=(g.y-gy)*0.02; gz+=(g.z-gz)*0.02; x=g.x-gx;y=g.y-gy;z=g.z-gz; }
+      gelen=true; S.mot=true;
+      const b=Math.hypot(x,y,z); S.accSS+=b*b; S.accN++;
+      if(S.hareket) S.hareket.push([performance.now(),x,y,z]);
+    });
+    setTimeout(()=>{ if(!gelen){ S.mot=false; sensorYaz(); if(!S.mic){ S.acik=false; sensorYaz(); sensorHata(); } } },2500);
+    S.mot=true;
+  }
+
+  if(navigator.geolocation){
+    navigator.geolocation.watchPosition(p=>{
+      S.gps=true; const c=p.coords, t=p.timestamp||Date.now();
+      let v = (c.speed!=null && c.speed>=0) ? c.speed*3.6 : null;
+      if(v==null && S.sonKonum){ const d=mesafe(S.sonKonum.lat,S.sonKonum.lon,c.latitude,c.longitude), dt=(t-S.sonKonum.t)/1000; if(dt>0.5) v=d/dt*3.6; }
+      S.sonKonum={lat:c.latitude, lon:c.longitude, t};
+      if(v!=null){ S.v=v; S.vT=performance.now(); }
+      S.gpsAcc=c.accuracy; sensorYaz();
+    }, ()=>{ S.gps=false; sensorYaz(); }, {enableHighAccuracy:true, maximumAge:0, timeout:15000});
+  }
+  S.acik = true;
+  try{ if(navigator.wakeLock) S.kilit=await navigator.wakeLock.request("screen"); }catch(e){}
+  sensorYaz();
+  if(!S.mic && !S.mot) { sensorHata(); S.acik=false; }
+  setInterval(canliYaz,250);
+  return S.acik;
+}
+function mesafe(a1,o1,a2,o2){ const R=6371000, r=Math.PI/180, da=(a2-a1)*r, dO=(o2-o1)*r; const h=Math.sin(da/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin(dO/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function sensorHata(){
   const u=$("sensorUyari"); u.hidden=false;
-  u.textContent = `${ne} bu ekranda kullanılamıyor. Testler, uygulamayı GitHub linkinizden telefonda açınca ve izin verince çalışır (Claude içindeki önizlemede çalışmaz).`;
+  u.textContent="Sensörler bu ekranda açılamadı. Test, uygulamayı ana ekrandaki Golf Teşhis simgesinden (GitHub linkinizden) açınca ve izinlere \"İzin ver\" deyince çalışır. Claude içindeki önizlemede çalışmaz; burada \"Örnek sonuç göster\" ile nasıl görüneceğine bakabilirsiniz.";
 }
-function geriSay(el, sn){ el.hidden=false; let k=sn; el.textContent=k; const t=setInterval(()=>{ k--; el.textContent=k>0?k:""; if(k<=0){clearInterval(t); el.hidden=true;} },1000); return t; }
+function sensorYaz(){
+  const p=[]; p.push("Mikrofon "+(S.mic?"✓":"✗")); p.push("Hareket "+(S.mot?"✓":"✗")); p.push("GPS "+(S.gps?"✓"+(S.gpsAcc?` (±${Math.round(S.gpsAcc)} m)`:""):"bekleniyor"));
+  $("sensorDurum").textContent=p.join(" · ");
+  $("btnSensor").textContent = S.acik ? "Sensörler açık" : "Sensörleri aç"; $("btnSensor").disabled=S.acik;
+}
+function anlik(){
+  const s=performance.now();
+  const rpm = (S.rpm && s-S.rpmT<1000) ? S.rpm : null;
+  const v = (S.v!=null && s-S.vT<3000) ? S.v : null;
+  const a = S.accN ? Math.sqrt(S.accSS/S.accN) : null; S.accSS=0; S.accN=0;
+  return {rpm, v, a};
+}
+let sonAnlik={rpm:null,v:null,a:null};
+function canliYaz(){
+  if(!S.kayit) sonAnlik=anlik();
+  $("cRpm").textContent = sonAnlik.rpm ? Math.round(sonAnlik.rpm/10)*10+" rpm" : "—";
+  $("cHiz").textContent = sonAnlik.v!=null ? sonAnlik.v.toFixed(1)+" km/s" : "—";
+  $("cTit").textContent = sonAnlik.a!=null ? sonAnlik.a.toFixed(2)+" m/s²" : "—";
+}
 
-/* --- Titreşim --- */
-let titCalisiyor=false;
-$("btnTit").addEventListener("click", async ()=>{
-  if(titCalisiyor) return;
-  if(typeof DeviceMotionEvent==="undefined"){ sensorHata("Hareket sensörü"); return; }
-  try{
-    if(typeof DeviceMotionEvent.requestPermission==="function"){
-      const r=await DeviceMotionEvent.requestPermission(); if(r!=="granted"){ sensorHata("Hareket sensörü (izin verilmedi)"); return; }
+/* ---- Aşama çalıştırıcı ---- */
+const SURE={kalkis:25, sabit:20, ses:10};
+let oto = oku("oto",{});
+document.querySelectorAll(".oBaslat").forEach(b=>b.addEventListener("click", async ()=>{
+  const asama=b.dataset.a;
+  if(S.kayit) return;
+  if(!S.acik){ const ok=await sensorAc(); if(!ok) return; }
+  if(asama!=="kalkis" && asama!=="sabit" && !S.mic){ $("sonuc-"+asama).innerHTML=`<p class="yorum uyari">Bu adım için mikrofon izni gerekiyor.</p>`; return; }
+  if(asama==="kalkis" && !S.gps && !S.mot){ $("sonuc-"+asama).innerHTML=`<p class="yorum uyari">Bu adım için GPS veya hareket sensörü gerekiyor.</p>`; return; }
+  document.querySelectorAll(".oBaslat").forEach(x=>x.disabled=true);
+  const kayit={asama, t0:performance.now(), satir:[], spektrum:null, seviye:[]};
+  S.kayit=kayit; S.hareket = asama==="sabit" ? [] : null;
+  if(asama==="ses"){ kayit.spektrum=new Float64Array(S.an.frequencyBinCount); }
+  const fb = S.an ? new Float32Array(S.an.frequencyBinCount) : null, tb = S.an ? new Float32Array(S.an.fftSize) : null;
+  const say=$("say-"+asama); say.hidden=false;
+  const zam=setInterval(()=>{
+    const r=anlik(); sonAnlik=r; r.t=(performance.now()-kayit.t0)/1000; kayit.satir.push(r);
+    if(asama==="ses" && S.an){
+      S.an.getFloatFrequencyData(fb); for(let i=0;i<fb.length;i++) kayit.spektrum[i]+=Math.pow(10,fb[i]/10);
+      S.an.getFloatTimeDomainData(tb); let s=0; for(let i=0;i<tb.length;i++) s+=tb[i]*tb[i]; kayit.seviye.push(10*Math.log10(s/tb.length+1e-12));
     }
-  }catch(e){ sensorHata("Hareket sensörü"); return; }
-  titCalisiyor=true; $("btnTit").disabled=true; $("titSonuc").innerHTML="";
-  const ornek=[], sure=20, bas=performance.now();
-  let gx=0,gy=0,gz=0,ilk=true;
-  const dinle = ev=>{
-    let a=ev.acceleration, x,y,z;
-    if(a && a.x!=null){ x=a.x;y=a.y;z=a.z; }
-    else { const g=ev.accelerationIncludingGravity; if(!g||g.x==null) return;
-      if(ilk){gx=g.x;gy=g.y;gz=g.z;ilk=false} gx+=(g.x-gx)*0.02; gy+=(g.y-gy)*0.02; gz+=(g.z-gz)*0.02; x=g.x-gx;y=g.y-gy;z=g.z-gz; }
-    ornek.push([performance.now(),x,y,z]);
-  };
-  window.addEventListener("devicemotion",dinle);
-  geriSay($("titSayac"),sure);
-  setTimeout(()=>{ if(ornek.length<10){ window.removeEventListener("devicemotion",dinle); titBitir(); sensorHata("Hareket sensörü"); } },2500);
-  setTimeout(()=>{ window.removeEventListener("devicemotion",dinle); if(ornek.length>=10) titAnaliz(ornek, (performance.now()-bas)/1000); titBitir(); }, sure*1000);
-});
-function titBitir(){ titCalisiyor=false; $("btnTit").disabled=false; $("titSayac").hidden=true; }
-function titAnaliz(o, sure){
-  const n=o.length, fs=n/sure;
-  const ax=[0,1,2].map(i=>{ const v=o.map(r=>r[i+1]); const m=v.reduce((s,x)=>s+x,0)/n; return v.map(x=>x-m); });
-  let kt=0, tepe=0; for(let j=0;j<n;j++){ const b=Math.hypot(ax[0][j],ax[1][j],ax[2][j]); kt+=b*b; if(b>tepe) tepe=b; }
-  const rms=Math.sqrt(kt/n);
-  const vars=ax.map(a=>a.reduce((s,x)=>s+x*x,0)); const sig=ax[vars.indexOf(Math.max(...vars))];
-  let enF=0, enP=0; const fMax=Math.min(25, fs/2-0.5);
-  for(let f=1; f<=fMax; f+=0.25){ let re=0,im=0; for(let j=0;j<n;j++){ const t=j/fs; re+=sig[j]*Math.cos(2*Math.PI*f*t); im-=sig[j]*Math.sin(2*Math.PI*f*t);} const p=re*re+im*im; if(p>enP){enP=p;enF=f;} }
-  const hiz=Math.max(3,parseFloat($("titHiz").value)||15), tekerF=hiz/3.6/1.44;
-  const tekerUyum = enF>0 && (Math.abs(enF-tekerF)<0.3*tekerF || Math.abs(enF-2*tekerF)<0.3*tekerF);
-  const seviye = rms<0.5?"Düşük":rms<1.2?"Orta":"Yüksek";
-  let yorum, sinif, eklenecek=[];
-  if(seviye==="Düşük"){ yorum="Titreşim normal görünüyor."; sinif="ok"; }
-  else if(tekerUyum){ yorum=`Titreşim teker dönüşüyle aynı ritimde (yaklaşık ${tekerF.toFixed(1)} Hz). Teker balansı, jant, lastik veya aks rulmanı olası.`; sinif="uyari"; eklenecek=["f4"]; }
-  else { yorum="Titreşim yüksek ama teker ritminde değil. Motor takozu, kavrama balansı veya diferansiyel olası."; sinif="uyari"; eklenecek= seviye==="Yüksek"?["f4","t1"]:["f4"]; }
-  testSonuc.titresim={tarih:Date.now(), rms, tepe, enF, seviye, yorum, eklenecek};
-  yaz("testler",testSonuc); titCiz();
-}
-function titCiz(){
-  const s=testSonuc.titresim; if(!s){ $("titSonuc").innerHTML=""; return; }
-  $("titSonuc").innerHTML = `<div class="olcum"><div><span class="label">Seviye</span><b>${s.seviye}</b></div><div><span class="label">Ortalama</span><b>${s.rms.toFixed(2)} m/s²</b></div><div><span class="label">Baskın ritim</span><b>${s.enF?s.enF.toFixed(1)+" Hz":"—"}</b></div></div>
-   <p class="yorum ${s.seviye==="Düşük"?"ok":"uyari"}">${s.yorum}</p>
-   ${s.eklenecek.length?`<button class="btn" data-ekle="${s.eklenecek.join(",")}">Belirtilere ekle</button>`:""}`;
-}
-
-/* --- Ses --- */
-let sesCalisiyor=false;
-$("btnSes").addEventListener("click", async ()=>{
-  if(sesCalisiyor) return;
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ sensorHata("Mikrofon"); return; }
-  let akis, ctx;
-  try{
-    ctx = new (window.AudioContext||window.webkitAudioContext)(); await ctx.resume();
-    akis = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  }catch(e){ if(ctx) ctx.close(); sensorHata("Mikrofon"); return; }
-  sesCalisiyor=true; $("btnSes").disabled=true; $("sesSonuc").innerHTML="";
-  const src=ctx.createMediaStreamSource(akis), an=ctx.createAnalyser(); an.fftSize=4096; an.smoothingTimeConstant=0; src.connect(an);
-  const fb=new Float32Array(an.frequencyBinCount), tb=new Float32Array(an.fftSize), guc=new Float64Array(an.frequencyBinCount), seviyeler=[];
-  let kare=0; const sure=10;
-  geriSay($("sesSayac"),sure);
-  const t=setInterval(()=>{
-    an.getFloatFrequencyData(fb); an.getFloatTimeDomainData(tb);
-    for(let i=0;i<fb.length;i++) guc[i]+=Math.pow(10,fb[i]/10);
-    let s=0; for(let i=0;i<tb.length;i++) s+=tb[i]*tb[i]; seviyeler.push(10*Math.log10(s/tb.length+1e-12)); kare++;
+    say.textContent=Math.max(0,Math.ceil(SURE[asama]-r.t));
   },100);
   setTimeout(()=>{
-    clearInterval(t); akis.getTracks().forEach(x=>x.stop()); ctx.close();
-    sesCalisiyor=false; $("btnSes").disabled=false; $("sesSayac").hidden=true;
-    const hz=ctx.sampleRate/an.fftSize; let top=0, tiz=0, enP=0, enF=0;
-    for(let i=0;i<guc.length;i++){ const f=i*hz; if(f<50||f>8000) continue; top+=guc[i]; if(f>=2000) tiz+=guc[i]; if(f<=5000 && guc[i]>enP){enP=guc[i];enF=f;} }
-    const oran = top>0 ? tiz/top : 0;
-    const sirali=[...seviyeler].sort((a,b)=>a-b), med=sirali[Math.floor(sirali.length/2)];
-    const ort=seviyeler.reduce((a,b)=>a+b,0)/seviyeler.length, std=Math.sqrt(seviyeler.reduce((a,b)=>a+(b-ort)*(b-ort),0)/seviyeler.length);
-    let dusus=0; for(let i=1;i<seviyeler.length;i++) if(seviyeler[i]<med-8 && seviyeler[i-1]>=med-8) dusus++;
-    const sessiz = med < -55;
-    const notlar=[], ekle=[]; let sinif="ok";
-    if(sessiz) notlar.push("Ses çok düşük kaldı. Telefonu motora biraz daha yaklaştırıp tekrar deneyin.");
-    else {
-      if(oran>0.35){ notlar.push("Seste tiz ötme / cıyaklama payı yüksek. Kayış, kavrama veya dinamo kayışı olası."); ekle.push("s8"); sinif="uyari"; }
-      if(std>3 || dusus>=3){ notlar.push("Motor sesi düzensiz, kesik kesik. Tekleme olası (buji, karbüratör, yakıt)."); ekle.push("m3"); sinif="uyari"; }
-      if(!notlar.length) notlar.push("Ses dengeli görünüyor, belirgin ötme veya kesilme yok.");
-    }
-    testSonuc.ses={tarih:Date.now(), oran, std, dusus, enF, yorum:notlar.join(" "), sinif, eklenecek:ekle};
-    yaz("testler",testSonuc); sesCiz();
-  }, sure*1000);
-});
-function sesCiz(){
-  const s=testSonuc.ses; if(!s){ $("sesSonuc").innerHTML=""; return; }
-  $("sesSonuc").innerHTML = `<div class="olcum"><div><span class="label">Tiz ses payı</span><b>%${Math.round(s.oran*100)}</b></div><div><span class="label">Düzensizlik</span><b>${s.std.toFixed(1)} dB</b></div><div><span class="label">Baskın ses</span><b>${Math.round(s.enF)} Hz</b></div></div>
-   <p class="yorum ${s.sinif}">${s.yorum}</p>
-   ${s.eklenecek.length?`<button class="btn" data-ekle="${s.eklenecek.join(",")}">Belirtilere ekle</button>`:""}`;
+    clearInterval(zam); say.hidden=true; S.kayit=null;
+    const hareket=S.hareket; S.hareket=null;
+    document.querySelectorAll(".oBaslat").forEach(x=>x.disabled=false);
+    let sonuc;
+    if(asama==="kalkis") sonuc=kalkisAnaliz(kayit.satir);
+    else if(asama==="sabit") sonuc=sabitAnaliz(kayit.satir, hareket);
+    else sonuc=sesAnaliz(kayit);
+    oto[asama]=Object.assign(sonuc,{tarih:Date.now()}); delete oto.ornek; yaz("oto",oto); otoCiz(); sonucCiz();
+  }, SURE[asama]*1000);
+}));
+
+function bulgu(baslik, aciklama, seviye, deger, ariza){ return {baslik, aciklama, seviye, deger, ariza:ariza||[]}; }
+function refAl(){ return refler[oAyar.profil]||null; }
+
+function kalkisAnaliz(R){
+  const out={olcum:{}, bulgular:[]}, vNorm=oAyar.vmax||20, ref=refAl();
+  const rpmVar = R.filter(r=>r.rpm).length >= R.length*0.4;
+  const vVar = R.filter(r=>r.v!=null).length >= R.length*0.3;
+  // hareket başlangıcı
+  let ms=-1;
+  for(let i=0;i+3<R.length;i++){ if(R[i].a!=null && R[i].a>0.8 && R[i+1].a>0.8 && R[i+2].a>0.8){ ms=i; break; } }
+  if(ms<0 && vVar){ const j=R.findIndex(r=>r.v!=null && r.v>2.5); if(j>=0) ms=Math.max(0,j-10); }
+  if(ms<0){ out.bulgular.push(bulgu("Hareket algılanmadı","Araç hareket etmedi veya sensörler veri vermedi. Testi tekrarlayın; Başlat'tan sonra gaza sonuna kadar basın.","bilgi","",[])); return out; }
+  const tMs=R[ms].t; out.olcum.tKalkis=tMs;
+  // kavrama devri
+  const kavR=R.filter(r=>r.rpm && r.t>=tMs-0.7 && r.t<=tMs+0.1).map(r=>r.rpm);
+  const kav=medyan(kavR); if(kav) out.olcum.kavrama=Math.round(kav);
+  // sarsıntı
+  const ilk=R.filter(r=>r.a!=null && r.t>=tMs && r.t<=tMs+2).map(r=>r.a);
+  const {s:aStd}=ortSapma(ilk), aMax=Math.max(0,...ilk);
+  out.olcum.sarsinti=+aMax.toFixed(2);
+  // hız
+  const vs=R.filter(r=>r.v!=null);
+  const vmax = vs.length ? Math.max(...vs.map((r,i)=>{ const p=vs.slice(Math.max(0,i-1),i+2).map(x=>x.v); return p.reduce((a,b)=>a+b,0)/p.length; })) : null;
+  if(vmax!=null) out.olcum.vmax=+vmax.toFixed(1);
+  const t12r=vs.find(r=>r.v>=12 && r.t>tMs); const t12 = t12r ? t12r.t-tMs : null; if(t12!=null) out.olcum.t12=+t12.toFixed(1);
+  const son=R.filter(r=>r.t>=R[R.length-1].t-6);
+  const rpmTop=medyan(son.filter(r=>r.rpm).map(r=>r.rpm)), vTop=medyan(son.filter(r=>r.v!=null).map(r=>r.v));
+  if(rpmTop) out.olcum.rpmTop=Math.round(rpmTop);
+  if(rpmTop && vTop>3) out.olcum.oran=Math.round(rpmTop/vTop);
+  // anlık kayma
+  let kayma=0;
+  if(rpmTop && vs.length>4){ for(let i=1;i<vs.length;i++){ const a=vs[i-1], b=vs[i]; if(b.t-a.t<=2.5 && a.v-b.v>=2.5 && b.rpm && b.rpm>=0.9*rpmTop && b.t>tMs+3) kayma++; } }
+  out.olcum.kayma=kayma;
+
+  if(vmax!=null && vmax < vNorm*0.8){
+    if(rpmVar && rpmTop>=2900) out.bulgular.push(bulgu("Motor tam devirde ama araç yavaş","Motor yüksek devre çıkıyor fakat araç normal son hıza ulaşmıyor. Güç tekerlere tam aktarılmıyor.","kritik",`${vmax.toFixed(1)} km/s (normal ~${vNorm}), ${Math.round(rpmTop)} rpm`,["kayis","arkav","onkav"]));
+    else if(rpmVar) out.bulgular.push(bulgu("Motor devri yükselmiyor","Araç yavaş ve motor da yeterli devre çıkmıyor. Sorun motor gücü veya gaz/regülatör tarafında.","kritik",`${vmax.toFixed(1)} km/s, en fazla ${Math.round(rpmTop||0)} rpm`,["regulator","karb","hava","gazsw","buji"]));
+    else out.bulgular.push(bulgu("Son hız düşük","Araç normal son hıza ulaşmıyor. Motor devri sesten okunamadığı için kayış mı motor mu ayırt edilemedi.","uyari",`${vmax.toFixed(1)} km/s (normal ~${vNorm})`,["kayis","regulator","karb","hava"]));
+  } else if(ref && ref.oran && out.olcum.oran && out.olcum.oran > ref.oran*1.15){
+    out.bulgular.push(bulgu("Kayış kayıyor olabilir","Aynı hızı tutmak için motor, sağlam referansa göre belirgin şekilde fazla devir yapıyor.","uyari",`${out.olcum.oran} rpm/km/s (referans ${ref.oran})`,["kayis","arkav"]));
+  }
+  if(ref && ref.vmax && vmax!=null && vmax < ref.vmax-3 && !(vmax < vNorm*0.8)) out.bulgular.push(bulgu("Son hız referansın altında","Sağlam referansa göre araç belirgin şekilde yavaş.","uyari",`${vmax.toFixed(1)} km/s (referans ${ref.vmax})`,["kayis","regulator","karb"]));
+  if(kayma>=1) out.bulgular.push(bulgu("Tam gazda anlık kayma","Motor devri sabitken hız aniden düştü. Kayış kasnakta kayıyor olabilir.","uyari",`${kayma} kez`,["kayis","arkav"]));
+  if(t12!=null && t12>7) out.bulgular.push(bulgu("Hızlanma zayıf","0'dan 12 km/s'e çıkış normalden uzun sürdü.","uyari",`${t12.toFixed(1)} sn`,["kayis","onkav","karb","hava"]));
+  if(kav){
+    if(kav>2150) out.bulgular.push(bulgu("Kavrama geç tutuyor","Araç normalden yüksek devirde harekete başladı.","uyari",`${Math.round(kav)} rpm (normal 1.300–1.900)`,["onkav","kayis"]));
+    else if(kav<1000) out.bulgular.push(bulgu("Kavrama erken tutuyor","Araç çok düşük devirde harekete başladı.","bilgi",`${Math.round(kav)} rpm`,["onkav_yay"]));
+  }
+  if(aMax>3.5 || aStd>1.3) out.bulgular.push(bulgu("Kalkışta sarsıntı","Kalkışın ilk 2 saniyesinde sert ve düzensiz ivme ölçüldü.","uyari",`en fazla ${aMax.toFixed(1)} m/s²`,["onkav","takoz","kayis"]));
+  if(!out.bulgular.length) out.bulgular.push(bulgu("Kalkış ve hızlanma normal","Kavrama devri, hızlanma ve son hız normal aralıkta.","ok","",[]));
+  if(!rpmVar) out.not="Motor devri sesten güvenilir okunamadı; sonuçlar yalnızca hız ve ivmeye dayanıyor.";
+  if(!vVar) out.not=(out.not?out.not+" ":"")+"GPS hızı alınamadı; açık havada tekrar deneyin.";
+  return out;
 }
-$("m-telefon").addEventListener("click",e=>{ const b=e.target.closest("[data-ekle]"); if(!b) return; belirtiEkle(b.dataset.ekle.split(",")); b.textContent="Eklendi"; b.disabled=true; });
+
+function sabitAnaliz(R, H){
+  const out={olcum:{}, bulgular:[]}, ref=refAl();
+  const vs=R.filter(r=>r.v!=null).map(r=>r.v), vm=medyan(vs);
+  if(vm!=null) out.olcum.hiz=+vm.toFixed(1);
+  if(vs.length>5){ const {s}=ortSapma(vs); out.olcum.hizOyn=+s.toFixed(1); if(s>1.5 && vm>5) out.bulgular.push(bulgu("Sabit gazda hız dalgalanıyor","Gaz sabitken hız artıp azalıyor.","uyari",`±${s.toFixed(1)} km/s`,["kayis","regulator","karb"])); }
+  const rp=R.filter(r=>r.rpm).map(r=>r.rpm);
+  if(rp.length>=R.length*0.4){ const {o,s}=ortSapma(rp); out.olcum.rpm=Math.round(o); out.olcum.rpmOyn=Math.round(s);
+    if(s/o>0.08) out.bulgular.push(bulgu("Motor devri düzensiz","Sabit gazda motor devri belirgin şekilde oynuyor; tekleme olabilir.","uyari",`${Math.round(o)} ±${Math.round(s)} rpm`,["buji","karb","yakit"])); }
+  if(H && H.length>=40){
+    const n=H.length, sure=(H[n-1][0]-H[0][0])/1000, fs=n/sure;
+    const ax=[1,2,3].map(i=>{ const v=H.map(r=>r[i]); const m=v.reduce((s,x)=>s+x,0)/n; return v.map(x=>x-m); });
+    let kt=0; for(let j=0;j<n;j++){ const b=Math.hypot(ax[0][j],ax[1][j],ax[2][j]); kt+=b*b; }
+    const rms=Math.sqrt(kt/n); out.olcum.titresim=+rms.toFixed(2);
+    const vars=ax.map(a=>a.reduce((s,x)=>s+x*x,0)), sig=ax[vars.indexOf(Math.max(...vars))];
+    let enF=0,enP=0; const fMax=Math.min(25,fs/2-0.5);
+    for(let f=1; f<=fMax; f+=0.25){ let re=0,im=0; for(let j=0;j<n;j++){ const t=j/fs; re+=sig[j]*Math.cos(2*Math.PI*f*t); im-=sig[j]*Math.sin(2*Math.PI*f*t);} const p=re*re+im*im; if(p>enP){enP=p;enF=f;} }
+    out.olcum.ritim=enF;
+    const tekerF = vm ? vm/3.6/1.44 : null;
+    const uyum = tekerF && (Math.abs(enF-tekerF)<0.3*tekerF || Math.abs(enF-2*tekerF)<0.3*tekerF);
+    const sinir = ref && ref.titresim ? ref.titresim*1.8 : 1.2;
+    if(rms>sinir){
+      if(uyum) out.bulgular.push(bulgu("Teker ritminde titreşim","Titreşim tekerlerin dönüşüyle aynı ritimde.","uyari",`${rms.toFixed(2)} m/s², ${enF.toFixed(1)} Hz`,["balans","aks","ontakim"]));
+      else out.bulgular.push(bulgu("Yüksek titreşim","Titreşim yüksek ama teker ritminde değil; motor, kavrama veya şanzıman kaynaklı olabilir.","uyari",`${rms.toFixed(2)} m/s²`,["takoz","diferansiyel","onkav"]));
+    }
+  } else out.not="Hareket sensöründen yeterli veri alınamadı.";
+  if(!out.bulgular.length) out.bulgular.push(bulgu("Sabit hızda sorun görünmüyor","Hız, motor devri ve titreşim dengeli.","ok","",[]));
+  return out;
+}
+
+function sesAnaliz(K){
+  const out={olcum:{}, bulgular:[]};
+  const sv=K.seviye; if(!sv.length){ out.bulgular.push(bulgu("Ses alınamadı","Mikrofondan veri gelmedi.","bilgi","",[])); return out; }
+  const hz=S.ctx.sampleRate/S.an.fftSize; let top=0,tiz=0;
+  for(let i=0;i<K.spektrum.length;i++){ const f=i*hz; if(f<50||f>8000) continue; top+=K.spektrum[i]; if(f>=2000) tiz+=K.spektrum[i]; }
+  const oran=top>0?tiz/top:0; out.olcum.tiz=Math.round(oran*100);
+  const med=medyan(sv); let dusus=0; for(let i=1;i<sv.length;i++) if(sv[i]<med-8 && sv[i-1]>=med-8) dusus++;
+  const rp=K.satir.filter(r=>r.rpm).map(r=>r.rpm);
+  if(med<-55){ out.bulgular.push(bulgu("Ses çok düşük","Telefonu motora biraz daha yaklaştırıp tekrar deneyin.","bilgi","",[])); return out; }
+  if(oran>0.35) out.bulgular.push(bulgu("Kayış tarafından ötme / cıyaklama","Seste tiz ses payı yüksek.","uyari",`%${Math.round(oran*100)} tiz ses`,["kayis","dinamo_kayis","onkav"]));
+  if(rp.length>=K.satir.length*0.4){ const {o,s}=ortSapma(rp); out.olcum.rpm=Math.round(o);
+    if(s/o>0.08 || dusus>=3) out.bulgular.push(bulgu("Motor tekliyor","Sabit gazda motor sesi ve devri düzensiz.","uyari",`${Math.round(o)} ±${Math.round(s)} rpm`,["buji","karb","yakit"])); }
+  else if(dusus>=3) out.bulgular.push(bulgu("Motor sesi kesik kesik","Ses seviyesinde tekrarlayan düşüşler var; tekleme olabilir.","uyari",`${dusus} kesilme`,["buji","karb","yakit"]));
+  if(!out.bulgular.length) out.bulgular.push(bulgu("Ses normal","Belirgin ötme veya tekleme duyulmadı.","ok","",[]));
+  return out;
+}
+
+/* ---- Sonuçların gösterimi ---- */
+const ASAMA_AD={kalkis:"Kalkış ve hızlanma", sabit:"Sabit hız", ses:"Kayış ve motor sesi"};
+const OLCUM_AD={kavrama:["Kavrama devri","rpm"], vmax:["Son hız","km/s"], t12:["0–12 km/s","sn"], rpmTop:["Tam gaz devri","rpm"], oran:["Devir / hız","rpm/km/s"], sarsinti:["Kalkış ivmesi","m/s²"],
+  hiz:["Ortalama hız","km/s"], hizOyn:["Hız oynaması","± km/s"], rpm:["Ortalama devir","rpm"], rpmOyn:["Devir oynaması","± rpm"], titresim:["Titreşim","m/s²"], ritim:["Baskın ritim","Hz"], tiz:["Tiz ses payı","%"]};
+function otoBulgular(){ const l=[]; ["kalkis","sabit","ses"].forEach(a=>{ if(oto[a]) oto[a].bulgular.forEach(b=>l.push(Object.assign({asama:a},b))); }); return l; }
+function asamaHtml(a){
+  const s=oto[a]; if(!s) return "";
+  const olc=Object.entries(s.olcum||{}).filter(([k,v])=>OLCUM_AD[k] && v!=null && !(k==="kayma")).map(([k,v])=>`<div><span class="label">${OLCUM_AD[k][0]}</span><b>${typeof v==="number"?v.toLocaleString("tr-TR"):v} <small>${OLCUM_AD[k][1]}</small></b></div>`).join("");
+  return (olc?`<div class="olcum">${olc}</div>`:"") + s.bulgular.map(b=>`<p class="yorum ${b.seviye==="ok"?"ok":b.seviye==="bilgi"?"":"uyari"}"><b>${b.baslik}.</b> ${b.aciklama}${b.deger?` <span class="mono">(${b.deger})</span>`:""}</p>`).join("") + (s.not?`<p class="note">${s.not}</p>`:"");
+}
+function otoCiz(){
+  ["kalkis","sabit","ses"].forEach(a=>$("sonuc-"+a).innerHTML=asamaHtml(a));
+  const l=otoBulgular().filter(b=>b.ariza.length);
+  const herhangi = oto.kalkis||oto.sabit||oto.ses;
+  $("otoTarih").textContent = herhangi ? (oto.ornek?"ÖRNEK VERİ · ":"")+tarihYaz(Math.max(...["kalkis","sabit","ses"].map(a=>oto[a]?oto[a].tarih:0))) : "";
+  if(!herhangi){ $("otoBulgular").innerHTML=`<div class="empty">Henüz test yapılmadı. Yukarıdaki adımları sırayla uygulayın; sonuç burada toplanır.</div>`; }
+  else if(!l.length){ $("otoBulgular").innerHTML=`<div class="empty">Yapılan testlerde sorun bulunmadı.</div>`; }
+  else $("otoBulgular").innerHTML = l.map(b=>`<article class="finding ${b.seviye}"><div class="top"><h3>${b.baslik}</h3><span class="chip ${b.seviye}">${b.seviye==="kritik"?"Kritik":"Uyarı"}</span></div>
+     <p>${b.aciklama}</p><div class="meta">${ASAMA_AD[b.asama]}${b.deger?" · <span class=\"mono\">"+b.deger+"</span>":""}</div>
+     <div class="label">Olası sebepler</div><ul>${b.ariza.map(id=>`<li><b>${ARIZA[id].ad}:</b> ${ARIZA[id].k[0]}</li>`).join("")}</ul></article>`).join("");
+  const ref=refAl();
+  $("refNot").textContent = ref ? `Referans kayıtlı (${OPROF[oAyar.profil].ad}): son hız ${ref.vmax??"—"} km/s, devir/hız ${ref.oran??"—"}, titreşim ${ref.titresim??"—"} m/s².` : "Sağlam bir araçta testleri yapıp referans kaydederseniz, sonraki araçlar ona göre karşılaştırılır.";
+}
+$("btnRef").addEventListener("click",()=>{
+  if(oto.ornek){ $("refNot").textContent="Örnek veri referans olarak kaydedilemez. Önce gerçek bir sağlam araçta test yapın."; return; }
+  const k=oto.kalkis&&oto.kalkis.olcum||{}, s=oto.sabit&&oto.sabit.olcum||{};
+  if(!k.vmax && !s.titresim){ $("refNot").textContent="Önce Adım 1 ve 2'yi sağlam bir araçta yapın."; return; }
+  refler[oAyar.profil]={vmax:k.vmax||null, oran:k.oran||null, kavrama:k.kavrama||null, titresim:s.titresim||null};
+  yaz("refler",refler); otoCiz();
+});
+$("btnOtoSil").addEventListener("click",()=>{ oto={}; yaz("oto",oto); otoCiz(); sonucCiz(); });
+$("btnOrnek").addEventListener("click",()=>{
+  const t=Date.now();
+  oto={ornek:true,
+    kalkis:{tarih:t, olcum:{kavrama:2280, vmax:15.4, t12:8.2, rpmTop:3460, oran:225, sarsinti:2.1},
+      bulgular:[bulgu("Motor tam devirde ama araç yavaş","Motor yüksek devre çıkıyor fakat araç normal son hıza ulaşmıyor. Güç tekerlere tam aktarılmıyor.","kritik","15,4 km/s (normal ~20), 3460 rpm",["kayis","arkav","onkav"]),
+        bulgu("Hızlanma zayıf","0'dan 12 km/s'e çıkış normalden uzun sürdü.","uyari","8,2 sn",["kayis","onkav","karb","hava"]),
+        bulgu("Kavrama geç tutuyor","Araç normalden yüksek devirde harekete başladı.","uyari","2280 rpm (normal 1.300–1.900)",["onkav","kayis"])]},
+    sabit:{tarih:t, olcum:{hiz:14.8, hizOyn:0.6, rpm:3380, rpmOyn:90, titresim:0.54, ritim:2.75},
+      bulgular:[bulgu("Sabit hızda sorun görünmüyor","Hız, motor devri ve titreşim dengeli.","ok","",[])]}};
+  otoCiz(); sonucCiz();
+});
 
 /* ================= RAPOR ================= */
 const ALAN=["rPlaka","rMarka","rMusteri","rTel","rSaat","rNot"];
@@ -1172,10 +1440,13 @@ function raporOlustur(){
   if(secili.size){ sat.push(""); sat.push("Görülen belirtiler:"); [...secili].forEach(k=>sat.push("• "+BELIRTI_AD[k])); }
   const l=adaylarHesapla();
   if(l.length){ const top=l[0].p; sat.push(""); sat.push("Olası arızalar:"); l.slice(0,4).forEach((x,i)=>sat.push(`${i+1}. ${x.a.ad} (${etiket(x.p/top).toLowerCase()})`)); }
-  const T=testSonuc, testS=[];
-  if(T.titresim && Date.now()-T.titresim.tarih<6*3600e3) testS.push(`Titreşim: ${T.titresim.seviye.toLowerCase()} – ${T.titresim.yorum}`);
-  if(T.ses && Date.now()-T.ses.tarih<6*3600e3) testS.push(`Ses: ${T.ses.yorum}`);
-  if(testS.length){ sat.push(""); sat.push("Telefon testleri:"); testS.forEach(x=>sat.push("• "+x)); }
+  if(!oto.ornek){ const testS=[];
+    ["kalkis","sabit","ses"].forEach(a=>{ const s=oto[a]; if(!s || Date.now()-s.tarih>6*3600e3) return;
+      const o=s.olcum||{}, d=[];
+      if(o.vmax!=null) d.push("son hız "+o.vmax+" km/s"); if(o.kavrama) d.push("kavrama "+o.kavrama+" rpm"); if(o.rpmTop) d.push("tam gaz "+o.rpmTop+" rpm");
+      if(o.titresim!=null) d.push("titreşim "+o.titresim+" m/s²");
+      testS.push(ASAMA_AD[a]+(d.length?" ("+d.join(", ")+")":"")+": "+s.bulgular.map(b=>b.baslik).join("; ")); });
+    if(testS.length){ sat.push(""); sat.push("Otomatik test (telefon ölçümü):"); testS.forEach(x=>sat.push("• "+x)); } }
   if(window.kitApi){ const k=window.kitApi.durum();
     if(k.mod==="golf"||k.mod==="obd"){ sat.push(""); sat.push("Kit ölçümü:"); if(!k.akt.length && !k.kodlar.length) sat.push("• Ölçülen değerler normal");
       k.akt.forEach(b=>sat.push(`• ${b.baslik} (${b.deger})`)); k.kodlar.forEach(c=>sat.push("• Arıza kodu "+c)); } }
@@ -1204,8 +1475,8 @@ $("btnKaydet").addEventListener("click",()=>{
 });
 $("btnYeni").addEventListener("click",()=>{
   ALAN.forEach(a=>$(a).value=""); yaz("taslak",{}); secili.clear(); yaz("belirtiler",[]);
-  delete testSonuc.titresim; delete testSonuc.ses; yaz("testler",testSonuc);
-  belirtiCiz(); titCiz(); sesCiz(); sonucCiz(); $("raporNot").textContent="Yeni araç için form temizlendi.";
+  oto={}; yaz("oto",oto);
+  belirtiCiz(); otoCiz(); sonucCiz(); $("raporNot").textContent="Yeni araç için form temizlendi.";
 });
 let silBekleyen=null;
 function kayitCiz(){
@@ -1226,6 +1497,9 @@ $("kayitlar").addEventListener("click",e=>{
 });
 
 /* ================= BAŞLANGIÇ ================= */
-belirtiCiz(); titCiz(); sesCiz(); kayitCiz(); sonucCiz();
+belirtiCiz(); otoCiz(); kayitCiz(); sonucCiz();
 })();
 </script>
+
+</body>
+</html>
