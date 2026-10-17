@@ -1,0 +1,747 @@
+<title>Golf Teşhis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: tek sütun atölye paneli — üstte araç seçimi ve bağlantı, altında durum özeti, sekmelerde canlı göstergeler / arızalar / kurulum */
+:root{
+  --bg:#EDEFEA; --surface:#F9FAF7; --sunk:#E3E6E0; --fg:#1A1F1C; --muted:#5C665F; --line:#D2D7CF;
+  --accent:#0F6A80; --accent-ink:#FFFFFF;
+  --ok:#2F7D4A; --ok-soft:#DCEDE1; --warn:#9A6410; --warn-soft:#F6E8CF; --crit:#B3372B; --crit-soft:#F7DCD8;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111513; --surface:#1A1F1C; --sunk:#232925; --fg:#E5E9E3; --muted:#97A199; --line:#2D3430;
+  --accent:#58B7CC; --accent-ink:#0B1A1E;
+  --ok:#62C285; --ok-soft:#1C3325; --warn:#E3AA4E; --warn-soft:#3A2D16; --crit:#F0766A; --crit-soft:#3C1E1B;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111513; --surface:#1A1F1C; --sunk:#232925; --fg:#E5E9E3; --muted:#97A199; --line:#2D3430;
+  --accent:#58B7CC; --accent-ink:#0B1A1E;
+  --ok:#62C285; --ok-soft:#1C3325; --warn:#E3AA4E; --warn-soft:#3A2D16; --crit:#F0766A; --crit-soft:#3C1E1B;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance;line-height:1.1}
+h1{font-size:30px} h2{font-size:22px} h3{font-size:18px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+button,select{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.demo .dot{background:var(--warn)} .pill.on .dot{background:var(--ok)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0}
+select{width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.btn{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{border-color:var(--crit);color:var(--crit)}
+.btn:disabled{opacity:.5;cursor:default}
+.note{font-size:13.5px;color:var(--muted);margin:0}
+.note.err{color:var(--crit)}
+
+.status{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--line)}
+.status.ok{background:var(--ok-soft);border-color:transparent}
+.status.warn{background:var(--warn-soft);border-color:transparent}
+.status.crit{background:var(--crit-soft);border-color:transparent}
+.status b{font-family:var(--f-display);font-size:21px;letter-spacing:.01em}
+.status .big{font-family:var(--f-display);font-size:34px;font-weight:700;line-height:1}
+.status.ok .big{color:var(--ok)} .status.warn .big{color:var(--warn)} .status.crit .big{color:var(--crit)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--crit);color:#fff;font-size:12px;text-align:center}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .v{font-family:var(--f-mono);font-size:26px;font-variant-numeric:tabular-nums;line-height:1.2}
+.tile .u{font-size:13px;color:var(--muted);margin-left:3px;font-family:var(--f-body)}
+.tile .head{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.chip{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.uyari{background:var(--warn-soft);color:var(--warn)} .chip.kritik{background:var(--crit-soft);color:var(--crit)} .chip.yok{background:var(--sunk);color:var(--muted)} .chip.bilgi{background:var(--sunk);color:var(--fg)}
+.tile svg{width:100%;height:34px;display:block;margin-top:4px}
+.tile.uyari{border-color:var(--warn)} .tile.kritik{border-color:var(--crit)}
+
+.finding{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.finding.kritik{border-color:var(--crit)} .finding.uyari{border-color:var(--warn)}
+.finding .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.finding p{margin:0;max-width:65ch}
+.finding ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.meta{font-size:12.5px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:10px}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;background:var(--sunk)}
+tr:last-child td{border-bottom:0}
+td .mono{font-size:13px}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;max-width:70ch}
+.section{display:flex;flex-direction:column;gap:10px}
+.prose p{margin:0;max-width:68ch}
+@media (prefers-reduced-motion: no-preference){.tile .v{transition:color .2s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Benzinli golf aracı · CVT · OBD-II</div>
+      <h1>Golf Teşhis</h1>
+    </div>
+    <span id="conn" class="pill"><span class="dot"></span><span id="connText">Bağlı değil</span></span>
+  </header>
+
+  <section class="panel" aria-label="Araç ve bağlantı">
+    <div class="row">
+      <div class="field">
+        <label class="label" for="profil">Araç / marka</label>
+        <select id="profil"></select>
+      </div>
+      <div class="field" id="senaryoAlan">
+        <label class="label" for="senaryo">Demo senaryosu</label>
+        <select id="senaryo"></select>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="btnBaglan">Cihaza bağlan</button>
+      <button class="btn" id="btnDemo">Demoyu başlat</button>
+      <button class="btn" id="btnKes" hidden>Bağlantıyı kes</button>
+    </div>
+    <p class="note" id="baglantiNot"></p>
+  </section>
+
+  <div id="durum" class="status ok" role="status"></div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-canli" aria-selected="true" data-tab="canli">Canlı veri</button>
+    <button class="tab" role="tab" id="t-ariza" aria-selected="false" data-tab="ariza">Arızalar<span id="arizaSayi" class="badge" hidden>0</span></button>
+    <button class="tab" role="tab" id="t-kurulum" aria-selected="false" data-tab="kurulum">Kurulum</button>
+  </nav>
+
+  <!-- CANLI -->
+  <section id="p-canli" class="section">
+    <div class="tiles" id="tiles"></div>
+    <div class="panel" id="obdPanel" hidden>
+      <h3>Arıza kodları (DTC)</h3>
+      <div class="row">
+        <button class="btn primary" id="btnKodOku">Arıza kodlarını oku</button>
+        <button class="btn danger" id="btnKodSil">Kodları sil</button>
+      </div>
+      <p class="note" id="obdNot">Kodlar okunduğunda Arızalar sekmesinde açıklamalarıyla listelenir.</p>
+    </div>
+    <div class="panel" id="kalibPanel">
+      <h3>Kalibrasyon</h3>
+      <p class="note">Marka profillerindeki değerler yaklaşıktır. Aracınız sağlıklıyken 1–2 dakika normal sürüş yapın, sonra bu düğmeye basın. Uygulama kavrama devrini ve titreşim seviyesini sizin aracınıza göre ayarlar.</p>
+      <div class="row">
+        <button class="btn" id="btnKalib">Sağlıklı araçla kalibre et</button>
+        <button class="btn" id="btnKalibSil">Kalibrasyonu sıfırla</button>
+      </div>
+      <p class="note" id="kalibNot"></p>
+    </div>
+  </section>
+
+  <!-- ARIZALAR -->
+  <section id="p-ariza" class="section" hidden>
+    <div class="row" style="justify-content:space-between">
+      <p class="note">Son 60 saniyede görülen sorunlar. Her birinin altında ustanın bakacağı yerler var.</p>
+      <button class="btn" id="btnTemizle">Listeyi temizle</button>
+    </div>
+    <div class="list" id="bulgular"></div>
+  </section>
+
+  <!-- KURULUM -->
+  <section id="p-kurulum" class="section" hidden>
+    <div class="section prose">
+      <h2>Alışveriş listesi</h2>
+      <p class="muted">Fiyatlar yaklaşıktır ve sık değişir; Direnc.net, Robotistan, Hepsiburada veya Trendyol'da ürün adıyla aratın.</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Parça</th><th>Adet</th><th>Ne işe yarar</th><th>Yaklaşık</th></tr></thead>
+      <tbody>
+        <tr><td><b>ESP32 DevKitC</b> (WROOM-32D, 38 pin)</td><td class="mono">1</td><td>Cihazın beyni, Bluetooth ile telefona gönderir</td><td class="mono">250–500 ₺</td></tr>
+        <tr><td><b>12V → 5V DC-DC dönüştürücü</b> (LM2596 veya mini 12V-5V USB)</td><td class="mono">1</td><td>Akü 12V'unu ESP32 için 5V'a düşürür</td><td class="mono">60–150 ₺</td></tr>
+        <tr><td><b>NJK-5002C Hall sensör</b> (NPN, 5–24V)</td><td class="mono">2</td><td>Arka kavrama ve teker devri (su geçirmez, sanayiye dayanıklı)</td><td class="mono">100–200 ₺/ad.</td></tr>
+        <tr><td><b>Neodyum mıknatıs</b> 10×3 mm</td><td class="mono">4</td><td>Kavramaya ve tekere yapıştırılır</td><td class="mono">40–80 ₺</td></tr>
+        <tr><td><b>MLX90614 (GY-906)</b> kızılötesi sıcaklık modülü</td><td class="mono">1</td><td>Kayışın sıcaklığını temassız ölçer</td><td class="mono">250–450 ₺</td></tr>
+        <tr><td><b>MPU6050 (GY-521)</b> ivme sensörü</td><td class="mono">1</td><td>Şanzıman/diferansiyel titreşimi</td><td class="mono">80–150 ₺</td></tr>
+        <tr><td><b>MAX6675 modül + K tipi buji altı halka termokupl</b> (14 mm)</td><td class="mono">1</td><td>Motor (silindir kapağı) sıcaklığı</td><td class="mono">150–300 ₺</td></tr>
+        <tr><td><b>PC817 optokuplör, 1N4148 diyot, 1 kΩ direnç</b></td><td class="mono">1'er</td><td>Buji kablosundan güvenli devir sinyali</td><td class="mono">20–40 ₺</td></tr>
+        <tr><td><b>Dirençler:</b> 100 kΩ, 22 kΩ, 3 × 10 kΩ; <b>100 nF</b> kondansatör</td><td class="mono">—</td><td>Voltaj ölçümü ve sinyal hatları</td><td class="mono">20–40 ₺</td></tr>
+        <tr><td><b>Sigortalı kablo yuvası + 2A sigorta</b></td><td class="mono">1</td><td>Kısa devreye karşı koruma</td><td class="mono">40–80 ₺</td></tr>
+        <tr><td><b>IP65 plastik kutu</b>, kablo rakoru, delikli pertinaks, ekranlı 4 damarlı kablo, makaron, kelepçe</td><td class="mono">—</td><td>Montaj, su ve toz koruması</td><td class="mono">200–400 ₺</td></tr>
+        <tr><td><b>Otomobil için:</b> ELM327 <b>Bluetooth LE (4.0)</b> OBD adaptörü</td><td class="mono">1</td><td>Sadece otomobil modunda gerekir. Klasik Bluetooth 2.0 modeller uygulamaya bağlanamaz.</td><td class="mono">300–800 ₺</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Golf cihazı toplamı kabaca <b>1.500–2.500 ₺</b>.</p>
+
+    <div class="section prose">
+      <h2>Bağlantı şeması</h2>
+      <p class="muted">ESP32 pinleri, cihaz yazılımındaki (golf_teshis_esp32.ino) ayarlarla birebir aynıdır.</p>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Sensör</th><th>Sensör ucu</th><th>Bağlandığı yer</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="2"><b>Güç</b></td><td>Akü + (sigortadan, kontak sonrası)</td><td>DC-DC giriş +; çıkış 5V → ESP32 <span class="mono">5V/VIN</span></td></tr>
+        <tr><td>Akü −</td><td>DC-DC giriş −, ESP32 <span class="mono">GND</span> (tüm GND'ler ortak)</td></tr>
+        <tr><td rowspan="2"><b>Motor devri</b></td><td>Buji kablosuna 8–10 tur sarılmış izoleli tel</td><td>1N4148 (ters paralel) + 1 kΩ üzerinden PC817 LED ucu</td></tr>
+        <tr><td>PC817 kollektör / emiter</td><td>Kollektör → <span class="mono">GPIO27</span> (+10 kΩ ile 3,3V'a); emiter → GND</td></tr>
+        <tr><td rowspan="2"><b>Arka kavrama</b> (NJK-5002C)</td><td>Kahverengi / mavi</td><td>12V (sigortalı) / GND</td></tr>
+        <tr><td>Siyah (sinyal)</td><td><span class="mono">GPIO26</span> (+10 kΩ ile 3,3V'a)</td></tr>
+        <tr><td><b>Teker</b> (NJK-5002C, isteğe bağlı)</td><td>Kahverengi / mavi / siyah</td><td>12V / GND / <span class="mono">GPIO25</span> (+10 kΩ ile 3,3V'a)</td></tr>
+        <tr><td><b>MLX90614</b> kayış sıcaklığı</td><td>VIN, GND, SDA, SCL</td><td>3,3V, GND, <span class="mono">GPIO21</span>, <span class="mono">GPIO22</span></td></tr>
+        <tr><td><b>MPU6050</b> titreşim</td><td>VCC, GND, SDA, SCL</td><td>3,3V, GND, <span class="mono">GPIO21</span>, <span class="mono">GPIO22</span> (MLX ile aynı hat)</td></tr>
+        <tr><td><b>MAX6675</b> motor sıcaklığı</td><td>VCC, GND, SCK, CS, SO</td><td>3,3V, GND, <span class="mono">GPIO18</span>, <span class="mono">GPIO5</span>, <span class="mono">GPIO19</span></td></tr>
+        <tr><td><b>Akü voltajı</b></td><td>Akü + → 100 kΩ → nokta → 22 kΩ → GND</td><td>Ortadaki nokta → <span class="mono">GPIO34</span>; 22 kΩ'a paralel 100 nF</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="section">
+      <h2>Araca montaj</h2>
+      <ol class="steps">
+        <li><b>Arka kavrama mıknatısları:</b> Arka kavramanın sabit kasnağının dış yüzüne, birbirine tam karşı (180°) iki mıknatısı aynı kutup dışarı bakacak şekilde epoksiyle yapıştırın. Hall sensörü kavrama kapağına bir L braketle, mıknatısa 5–8 mm mesafede sabitleyin.</li>
+        <li><b>Kayış sıcaklığı:</b> Kavrama kapağına küçük bir delik açın, MLX90614'ü kayışa 2–5 cm mesafeden bakacak şekilde yerleştirin. Merceği tozdan korumak için etrafına kısa bir boru geçirin.</li>
+        <li><b>Titreşim:</b> MPU6050'yi diferansiyel (şanzıman) gövdesindeki bir cıvataya, metal bir plakayla sıkıca bağlayın. Çift taraflı bant yeterli değildir, titreşimi yutar.</li>
+        <li><b>Motor sıcaklığı:</b> Bujiyi sökün, halka termokuplu altına geçirip bujiyi tekrar sıkın.</li>
+        <li><b>Devir teli:</b> İzoleli teli buji kablosunun üzerine 8–10 tur sarın, bantlayın. ESP32 kutusunu ve kabloları ateşleme bobininden uzak tutun, sinyal kablolarında ekranlı kablo kullanın.</li>
+        <li><b>Kutu:</b> ESP32, DC-DC ve dirençleri IP65 kutuya koyup koltuk altına, egzozdan uzak bir yere sabitleyin. I2C kabloları (MLX ve MPU) 1 metreyi geçmesin.</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>Cihaz yazılımını yükleme</h2>
+      <ol class="steps">
+        <li>Bilgisayara Arduino IDE'yi kurun. Kart yöneticisinden <b>esp32 by Espressif</b> paketini yükleyin.</li>
+        <li><span class="mono">golf_teshis_esp32.ino</span> dosyasını açın, kart olarak <b>ESP32 Dev Module</b> seçin, USB ile bağlayıp <b>Yükle</b>'ye basın. Ek kütüphane gerekmez.</li>
+        <li>Seri monitörü (115200) açın. Motoru çalıştırınca devir ve sıcaklıklar akmalı. Motor devri yarı çıkıyorsa koddaki <span class="mono">MOTOR_DARBE_TUR</span> değerini 0.5 yapın.</li>
+        <li>Akü voltajını multimetreyle ölçün, seri monitördeki değerle farklıysa <span class="mono">VOLTAJ_DUZELTME</span> ile düzeltin.</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>Uygulamayı telefonda açma</h2>
+      <ol class="steps">
+        <li>Bu sayfa içinde demo modu çalışır, ama güvenlik nedeniyle Bluetooth'a erişemez.</li>
+        <li>Gerçek bağlantı için size verilen <span class="mono">golf_teshis.html</span> dosyasını ücretsiz bir barındırmaya (ör. Netlify Drop'a sürükle-bırak veya GitHub Pages) yükleyin ve linki <b>Android telefonda Chrome</b> ile açın. Chrome menüsünden "Ana ekrana ekle" ile uygulama gibi kullanabilirsiniz.</li>
+        <li>iPhone'da Safari Bluetooth'u desteklemez; App Store'daki <b>Bluefy</b> tarayıcısıyla açılabilir.</li>
+        <li>Telefonda Bluetooth ve konum açık olsun. <b>Cihaza bağlan</b>'a basınca listede <span class="mono">GolfTeshis</span> görünür.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Marka profilleri (değerler yaklaşıktır, kalibrasyonla ince ayar yapılır) ---------- */
+const PROFILLER = {
+  clubcar:   {ad:"Club Car DS / Precedent (Kawasaki, Subaru EX40)", tur:"golf", kavMin:1300, kavMax:1800, regulator:3400, transaks:12.5, motorSicMax:250},
+  ezgo:      {ad:"E-Z-GO TXT / RXV (Kawasaki, Subaru EX40)",        tur:"golf", kavMin:1300, kavMax:1800, regulator:3500, transaks:12.5, motorSicMax:250},
+  yamaha_g:  {ad:"Yamaha G16 / G22 / Drive (karbüratörlü)",         tur:"golf", kavMin:1300, kavMax:1700, regulator:3600, transaks:12.5, motorSicMax:240},
+  yamaha_d2: {ad:"Yamaha Drive2 EFI",                               tur:"golf", kavMin:1300, kavMax:1700, regulator:3600, transaks:12.5, motorSicMax:240},
+  genel:     {ad:"Diğer / genel benzinli golf aracı",               tur:"golf", kavMin:1300, kavMax:1900, regulator:3600, transaks:12.5, motorSicMax:250},
+  obd:       {ad:"Otomobil (OBD-II, ELM327)",                       tur:"obd"}
+};
+const TEKER_CEVRE_M = 1.44; // 18" golf lastiği
+
+const SENARYOLAR = {
+  saglikli:"Sağlıklı araç", kayis:"Kayış kayıyor", gec:"Geç kavrama", arka:"Arka kavrama takılıyor",
+  kayisSicak:"Kayış aşırı ısınıyor", sarj:"Şarj etmiyor", aku:"Akü zayıf", sanziman:"Şanzıman / rulman titreşimi", tekleme:"Motor tekliyor"
+};
+
+/* ---------- Bulgu tanımları ---------- */
+const TANIM = {
+  kayis_kopuk:{baslik:"Kayış kopmuş veya tamamen kayıyor", aciklama:"Motor yüksek devirde ama arka kavrama dönmüyor. Güç tekerlere gitmiyor.",
+    kontrol:["Aracı kullanmayın, kavrama kapağını açıp kayışı kontrol edin","Kayış kopmuş, atmış veya parçalanmışsa değiştirin","Ön kavramanın kapanıp kayışı sıkıştırdığını kontrol edin"]},
+  kayis_kayma:{baslik:"Kayış kayıyor", aciklama:"Yüksek devirde motor ile arka kavrama arasındaki oran sürekli oynuyor. Kayış aşınmış veya kavrama yüzeyleri kirli.",
+    kontrol:["Kayışın genişliğini ölçün; yeni kayıştan belirgin şekilde darsa değiştirin","Kayışta parlama, çatlak, yanık izi olup olmadığına bakın","Kavrama yüzeylerindeki yağ ve kiri fren temizleyiciyle temizleyin","Yalnızca markanın önerdiği kayış tipini kullanın"]},
+  gec_kavrama:{baslik:"Ön kavrama geç devreye giriyor", aciklama:"Araç normalden yüksek devirde harekete başlıyor. Kalkışta sarsıntı ve kayış aşınması yapar.",
+    kontrol:["Ön kavrama ağırlıklarını ve makaralarını aşınmaya karşı kontrol edin","Ön kavrama yayı zayıflamış veya yanlış yay takılmış olabilir","Ön kavramayı söküp temizleyin; burçlar sıkışmış olabilir"]},
+  erken_kavrama:{baslik:"Ön kavrama erken devreye giriyor", aciklama:"Araç çok düşük devirde harekete başlıyor. Rölantide kendiliğinden yürüyebilir.",
+    kontrol:["Gaz teli ve pedal ayarını kontrol edin","Ön kavrama yayı yerinden çıkmış veya kırık olabilir"]},
+  arka_kavrama:{baslik:"Arka kavrama vites büyütmüyor", aciklama:"Motor tam devirde ama CVT oranı yüksekte takılı kalıyor. Araç bağırıyor ama hızlanmıyor.",
+    kontrol:["Arka kavrama yayı ve rampa (cam) burçlarını kontrol edin","Arka kavramanın hareketli kasnağı mil üzerinde sıkışmış olabilir; temizleyin","Kavrama yüzeylerine yağ veya gres sürmeyin","Kayış çok uzun veya yanlış tipte olabilir"]},
+  regulator:{baslik:"Motor devri çok yüksek", aciklama:"Devir, regülatör (governor) sınırını aşıyor. Motor ve kayış zarar görebilir.",
+    kontrol:["Regülatör teli ve ayar somununu kontrol edin","Gaz teli takılı kalıyor olabilir"]},
+  kayis_sicak:{baslik:"Kayış aşırı ısınıyor", aciklama:"Kayış sıcaklığı normalin üstünde. Isınma genelde kaymadan veya havasız kalmaktan olur.",
+    kontrol:["Kavrama kapağının hava girişini ve çıkışını temizleyin","Kayış kayma uyarısı varsa önce onu giderin","Yokuşta uzun süre düşük hızla, yük altında gitmekten kaçının"]},
+  motor_sicak:{baslik:"Motor aşırı ısınıyor", aciklama:"Silindir kapağı sıcaklığı yüksek. Hava soğutmalı motorda bu genelde hava akışı veya yağ sorunudur.",
+    kontrol:["Soğutma kanatçıklarında ve fan kapağında ot, çamur birikmesini temizleyin","Motor yağı seviyesini ve rengini kontrol edin","Karbüratörde fakir karışım veya emme manifoldunda hava kaçağı olabilir"]},
+  sarj_yok:{baslik:"Akü şarj olmuyor", aciklama:"Motor çalışırken voltaj 13 V'un altında. Marş-şarj dinamosu aküyü doldurmuyor.",
+    kontrol:["Marş-şarj dinamosu (starter-generator) kayışı gerginliği","Dinamo fırçaları aşınmış olabilir","Voltaj regülatörünü kontrol edin","Kablo uçlarında oksit ve gevşeklik"]},
+  asiri_sarj:{baslik:"Aşırı şarj", aciklama:"Voltaj 15 V'un üstünde. Akü kaynayabilir, elektronik zarar görebilir.",
+    kontrol:["Voltaj regülatörü arızalı olabilir, değiştirin","Regülatör şasi bağlantısını kontrol edin"]},
+  aku_zayif:{baslik:"Akü zayıf", aciklama:"Motor dururken akü voltajı 12,2 V'un altında.",
+    kontrol:["Aküyü tam şarj edip yük testi yapın","Kutup başlarını temizleyip sıkın","Araç dururken sürekli akım çeken bir şey var mı kontrol edin"]},
+  mars_dusus:{baslik:"Marşta voltaj çok düşüyor", aciklama:"Marşa basıldığında voltaj 9,6 V'un altına iniyor. Akü veya marş devresi yetersiz.",
+    kontrol:["Akü yük testi yapın","Marş kablosu ve şasi bağlantısını kontrol edin","Marş-şarj dinamosu fırçaları ve kollektörü"]},
+  titresim:{baslik:"Şanzımanda anormal titreşim", aciklama:"Diferansiyel gövdesindeki titreşim normal seviyenin belirgin şekilde üstünde.",
+    kontrol:["Diferansiyel yağ seviyesi ve rengini kontrol edin; metal talaş varsa dişli aşınmıştır","Arka tekerleri kaldırıp aks rulmanlarında boşluk ve ses kontrolü","Motor takozları ve kavrama balansı","Teker jantı eğri veya balans bozuk olabilir"]},
+  darbe:{baslik:"Sert darbe algılandı", aciklama:"Kısa ama şiddetli bir darbe oldu. Vites değişiminde veya kalkışta tekrarlıyorsa aktarma organlarında boşluk var.",
+    kontrol:["İleri/geri vites mekanizmasını kontrol edin; araç tam durmadan vites değiştirmeyin","Aks ve diferansiyel dişli boşluğu","Motor ve şanzıman takozları"]},
+  tekleme:{baslik:"Motor tekliyor", aciklama:"Sabit gazda motor devri düzensiz oynuyor. Ateşleme veya yakıt beslemesinde sorun var.",
+    kontrol:["Bujiyi sökün; kurum, yağlanma ve elektrot aralığını kontrol edin","Hava filtresini kontrol edin","Karbüratör jetleri ve yakıt filtresi","Yakıt (vakum) pompası diyaframı"]},
+  obd_sicak:{baslik:"Soğutma suyu sıcaklığı yüksek", aciklama:"Motor soğutma suyu 105 °C'nin üstünde.",
+    kontrol:["Antifriz seviyesi","Fan çalışıyor mu","Termostat ve su pompası"]},
+  obd_voltaj:{baslik:"Şarj voltajı düşük", aciklama:"Motor çalışırken voltaj 13 V'un altında.",
+    kontrol:["Alternatör ve kayışı","Akü kutup başları"]}
+};
+
+/* ---------- OBD arıza kodu açıklamaları ---------- */
+const DTC = {
+  P0101:"Hava akış sensörü (MAF) değer aralığı dışında", P0113:"Emme havası sıcaklık sensörü sinyali yüksek",
+  P0128:"Soğutma suyu sıcaklığı termostat değerinin altında (termostat açık kalıyor)", P0171:"Karışım fakir (sıra 1)", P0172:"Karışım zengin (sıra 1)",
+  P0300:"Rastgele/çoklu silindir ateşleme hatası (tekleme)", P0301:"1. silindir ateşleme hatası", P0302:"2. silindir ateşleme hatası",
+  P0303:"3. silindir ateşleme hatası", P0304:"4. silindir ateşleme hatası", P0335:"Krank mili konum sensörü devresi",
+  P0340:"Eksantrik mili konum sensörü devresi", P0420:"Katalitik konvertör verimi düşük (sıra 1)", P0442:"Yakıt buharı sisteminde küçük kaçak",
+  P0500:"Araç hız sensörü arızası", P0505:"Rölanti kontrol sistemi arızası", P0562:"Sistem voltajı düşük",
+  P0700:"Şanzıman kontrol sistemi arızası (şanzıman beyninde ayrıca kod var)", P0715:"Şanzıman giriş mili hız sensörü",
+  P0720:"Şanzıman çıkış mili hız sensörü", P0730:"Yanlış vites oranı (şanzıman kaçırıyor olabilir)", P0731:"1. vites oranı yanlış",
+  P0732:"2. vites oranı yanlış", P0733:"3. vites oranı yanlış", P0734:"4. vites oranı yanlış",
+  P0740:"Tork konvertörü kilitleme (TCC) devresi", P0741:"Tork konvertörü kilitleme kavraması kayıyor veya devreye girmiyor",
+  P0750:"Vites değiştirme selenoidi A", P0755:"Vites değiştirme selenoidi B", P0868:"Şanzıman yağ basıncı düşük",
+  P0894:"Şanzıman parçası kayıyor", P0218:"Şanzıman aşırı ısınma"
+};
+function dtcKategori(k){
+  const h=k[0], g=k.slice(1,3);
+  if(h==="C") return "Şasi (fren/ABS, direksiyon, süspansiyon)";
+  if(h==="B") return "Gövde (hava yastığı, klima, aydınlatma)";
+  if(h==="U") return "Beyinler arası haberleşme (CAN hattı)";
+  if(g==="07"||g==="08"||g==="09") return "Şanzıman / aktarma organları";
+  if(g==="03") return "Ateşleme / tekleme";
+  if(g==="01"||g==="02") return "Yakıt ve hava ölçümü";
+  if(g==="04") return "Emisyon kontrol";
+  if(g==="05") return "Hız, rölanti kontrolü";
+  if(g==="06") return "Motor beyni ve çıkış devreleri";
+  return "Üreticiye özel kod";
+}
+
+/* ---------- Depolama (sadece bu tarayıcıda) ---------- */
+function oku(k,v){try{const x=localStorage.getItem("gt_"+k);return x?JSON.parse(x):v}catch(e){return v}}
+function yaz(k,v){try{localStorage.setItem("gt_"+k,JSON.stringify(v))}catch(e){}}
+
+/* ---------- Durum ---------- */
+let profilId = oku("profil","clubcar"); if(!PROFILLER[profilId]) profilId="clubcar";
+let senaryo = oku("senaryo","kayis"); if(!SENARYOLAR[senaryo]) senaryo="kayis";
+let mod = "yok";               // yok | demo | golf | obd
+let kalib = oku("kalib",{});
+let ornekler = [];
+let kavramaOlaylari = [];
+const bulgular = new Map();
+const sayac = {};
+let obdKodlar = [], obdKodOkundu = false;
+let aktifSekme = "canli";
+let simT = 0, simTimer = null;
+let bleCihaz = null;
+
+const $ = id => document.getElementById(id);
+const P = () => PROFILLER[profilId];
+
+/* ---------- Yardımcılar ---------- */
+const ort = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : 0;
+const ortFark = a => { if(a.length<2) return 0; let s=0; for(let i=1;i<a.length;i++) s+=Math.abs(a[i]-a[i-1]); return s/(a.length-1); };
+const son = n => ornekler.slice(-n);
+function kavAralik(){ const k=kalib[profilId]; return k&&k.kavrama ? [k.kavrama-250,k.kavrama+250] : [P().kavMin,P().kavMax]; }
+function titresimTaban(){ const k=kalib[profilId]; return k&&k.titresim ? k.titresim : 0.10; }
+
+function bulguVer(id, seviye, deger){
+  const b = bulgular.get(id) || {id, sayi:0, ilk:Date.now()};
+  if(!b.son || Date.now()-b.son > 2000) b.sayi++;
+  b.son = Date.now(); b.seviye = seviye; b.deger = deger;
+  bulgular.set(id,b);
+}
+function sure(id, kosul, n){ sayac[id] = kosul ? (sayac[id]||0)+1 : 0; return sayac[id] >= n; }
+
+/* ---------- Golf örneği işleme ---------- */
+function golfOrnek(o){
+  const pr = P();
+  o.t = Date.now();
+  o.hiz = o.w>0 ? o.w*TEKER_CEVRE_M*60/1000 : (o.d>0 ? (o.d/pr.transaks)*TEKER_CEVRE_M*60/1000 : 0);
+  o.oran = (o.d>50 && o.e>0) ? o.e/o.d : null;
+  const once = ornekler[ornekler.length-1];
+  if(once && once.d<30 && o.d>=30 && o.e>0){ kavramaOlaylari.push(o.e); if(kavramaOlaylari.length>6) kavramaOlaylari.shift(); }
+  ornekler.push(o); if(ornekler.length>240) ornekler.shift();
+  golfKurallar(o);
+}
+
+function golfKurallar(o){
+  const pr=P(), reg=pr.regulator, [kMin,kMax]=kavAralik();
+  if(sure("kopuk", o.e>kMax+500 && o.d<30, 4)) bulguVer("kayis_kopuk","kritik",`Motor ${o.e} rpm, kavrama 0 rpm`);
+
+  const pencere = son(12).filter(x=>x.e>0.85*reg && x.oran);
+  if(pencere.length>=10){
+    const oranlar = pencere.map(x=>x.oran), m=ort(oranlar), oynama=ortFark(oranlar);
+    if(oynama>0.12) bulguVer("kayis_kayma","uyari",`Oran her ölçümde ortalama ${oynama.toFixed(2)} oynuyor`);
+    if(m>1.6 && oynama<0.04) bulguVer("arka_kavrama","uyari",`Tam devirde oran ${m.toFixed(2)}:1 (normali ~1:1)`);
+    const dOyn = ortFark(pencere.map(x=>x.e));
+    if(dOyn>150) bulguVer("tekleme","uyari",`Sabit gazda devir ±${Math.round(dOyn)} rpm oynuyor`);
+  }
+  if(o.e > reg*1.12) bulguVer("regulator","uyari",`${o.e} rpm (sınır ~${reg})`);
+
+  if(kavramaOlaylari.length){
+    const k = kavramaOlaylari[kavramaOlaylari.length-1];
+    if(k>kMax) bulguVer("gec_kavrama","uyari",`${k} rpm'de kavradı (beklenen ${kMin}–${kMax})`);
+    else if(k<kMin-200) bulguVer("erken_kavrama","bilgi",`${k} rpm'de kavradı (beklenen ${kMin}–${kMax})`);
+  }
+  if(o.bt!=null){ if(o.bt>100) bulguVer("kayis_sicak","kritik",`${o.bt.toFixed(0)} °C`); else if(o.bt>85) bulguVer("kayis_sicak","uyari",`${o.bt.toFixed(0)} °C`); }
+  if(o.et!=null){ if(o.et>pr.motorSicMax+30) bulguVer("motor_sicak","kritik",`${o.et} °C`); else if(o.et>pr.motorSicMax) bulguVer("motor_sicak","uyari",`${o.et} °C`); }
+  if(o.v>5){
+    if(sure("sarj", o.e>1200 && o.v<13.0, 20)) bulguVer("sarj_yok","uyari",`Çalışırken ${o.v.toFixed(2)} V`);
+    if(o.v>15.2) bulguVer("asiri_sarj","kritik",`${o.v.toFixed(2)} V`);
+    if(sure("aku", o.e===0 && o.d===0 && o.v<12.2, 6)) bulguVer("aku_zayif","uyari",`Dururken ${o.v.toFixed(2)} V`);
+    if(o.vmin>3 && o.vmin<9.6) bulguVer("mars_dusus","uyari",`En düşük ${o.vmin.toFixed(2)} V`);
+  }
+  if(o.vib!=null && o.hiz>3){
+    const t=titresimTaban();
+    if(o.vib>t*2.8) bulguVer("titresim","kritik",`${o.vib.toFixed(2)} g (normal ~${t.toFixed(2)} g)`);
+    else if(sure("tit", o.vib>t*1.8, 6)) bulguVer("titresim","uyari",`${o.vib.toFixed(2)} g (normal ~${t.toFixed(2)} g)`);
+  }
+  if(o.vpk!=null && o.vpk>1.0) bulguVer("darbe","uyari",`Tepe ${o.vpk.toFixed(2)} g`);
+}
+
+/* ---------- OBD örneği işleme ---------- */
+function obdOrnek(o){
+  o.t=Date.now(); ornekler.push(o); if(ornekler.length>240) ornekler.shift();
+  if(o.sic!=null && o.sic>105) bulguVer("obd_sicak","uyari",`${o.sic} °C`);
+  if(o.v!=null && o.rpm>600 && sure("obdv", o.v<13.0, 8)) bulguVer("obd_voltaj","uyari",`${o.v.toFixed(2)} V`);
+}
+
+/* ---------- Demo simülatörü ---------- */
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function simGolf(t){
+  const pr=P(), s=senaryo, c=t%24, reg=pr.regulator;
+  const kav = s==="gec" ? 2250 : Math.round((pr.kavMin+pr.kavMax)/2);
+  let e=0,d=0, v=12.6, vmin=12.55, oran=3;
+  if(c<2){ e=0; }
+  else if(c<2.5){ e=280; vmin = s==="aku" ? 8.9 : 10.7; v = s==="aku"?11.9:12.4; }
+  else if(c<4){ e=Math.round(600+(kav-600)*(c-2.5)/1.5); }
+  else if(c<18){
+    e = c<7 ? kav+(reg*0.97-kav)*(c-4)/3 : reg*0.97;
+    oran = Math.max(0.9, 3.0-2.1*(c-4)/6);
+    if(s==="arka") oran=Math.max(2.0,oran);
+    if(s==="tekleme" && c>7) e += rnd(-400,400); else e += rnd(-30,30);
+    d = e/oran*(1+rnd(-0.01,0.01));
+    if(s==="kayis" && c>6.5) d *= rnd(0.62,1.0);
+    if(s==="arka" && c>7) e = reg*0.99+rnd(-20,20), d=e/oran;
+  } else if(c<19){ e=0; d=reg*0.97/0.9*(19-c); }
+  else { e=0; d=Math.max(0,(reg*0.97/0.9)*0.25*(24-c)/5); }
+  e=Math.max(0,Math.round(e)); d=Math.max(0,Math.round(d));
+  if(e>1200) v = s==="sarj" ? rnd(12.15,12.3) : rnd(13.9,14.2);
+  else if(c>=2.5) v = s==="aku" ? 11.95 : 12.5;
+  else if(s==="aku") v=11.95;
+  if(!(c>=2&&c<2.5)) vmin=v-0.05;
+  const hareket = d>30;
+  const w = d>0 ? Math.round(d/pr.transaks) : 0;
+  const bt = (s==="kayisSicak" ? 104 : s==="kayis" ? 88 : 62) + rnd(-2,2);
+  const et = Math.round(195+rnd(-5,5));
+  let vib = hareket ? (s==="sanziman" ? rnd(0.23,0.27) : rnd(0.06,0.09)) : rnd(0.01,0.02);
+  let vpk = vib*2.4;
+  if(s==="sanziman" && c>4 && c<4.3) vpk=1.3;
+  return {e,d,w,bt,et,v,vmin,vib,vpk};
+}
+let obdSimKodlar = ["P0741","P0300"];
+function simObd(t){
+  const c=t%20; const rpm = c<3?780+rnd(-15,15): c<12? 1800+700*Math.sin(c)+rnd(-40,40) : 2200+rnd(-60,60);
+  return {rpm:Math.round(rpm), hiz:Math.round(c<3?0:Math.min(90,c*7)), sic:Math.round(89+rnd(-1,1)), yuk:Math.round(c<3?18:45+rnd(-5,5)), v:14.1+rnd(-0.1,0.1)};
+}
+function simAdim(){
+  simT += 0.25;
+  if(P().tur==="obd") obdOrnek(simObd(simT)); else golfOrnek(simGolf(simT));
+  ciz();
+}
+function demoBaslat(){
+  baglantiKes(true);
+  mod="demo"; ornekler=[]; kavramaOlaylari=[]; bulgular.clear(); for(const k in sayac) delete sayac[k];
+  obdKodlar=[]; obdKodOkundu=false;
+  simT=0;
+  for(let i=0;i<120;i++){ simT+=0.25; if(P().tur==="obd") obdOrnek(simObd(simT)); else golfOrnek(simGolf(simT)); }
+  simTimer = setInterval(simAdim,250);
+  $("baglantiNot").className="note";
+  $("baglantiNot").textContent = "Demo verisi gösteriliyor. Gerçek ölçüm değildir.";
+  ciz();
+}
+
+/* ---------- Bluetooth: golf cihazı ---------- */
+const SVC="a3c87500-8ed3-4bdf-8a39-a01bebede295", CHR="a3c87501-8ed3-4bdf-8a39-a01bebede295";
+function btYok(){
+  $("baglantiNot").className="note err";
+  $("baglantiNot").textContent = "Bu ekranda Bluetooth kullanılamıyor. Gerçek bağlantı için Kurulum sekmesindeki adımlarla uygulamayı Android telefonda Chrome ile açın. Şimdilik demoyla deneyebilirsiniz.";
+}
+async function golfBaglan(){
+  const dev = await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
+  const srv = await dev.gatt.connect();
+  const ch = await (await srv.getPrimaryService(SVC)).getCharacteristic(CHR);
+  ch.addEventListener("characteristicvaluechanged", ev=>{
+    const dv=ev.target.value; if(dv.byteLength<19) return;
+    const bt=dv.getInt16(6,true), et=dv.getInt16(8,true), f=dv.getUint8(18);
+    golfOrnek({e:dv.getUint16(0,true), d:dv.getUint16(2,true), w:dv.getUint16(4,true),
+      bt: (f&1 && bt!==-32768) ? bt/10 : null, et: (f&4 && et!==-32768) ? et : null,
+      v:dv.getUint16(10,true)/1000, vmin:dv.getUint16(12,true)/1000,
+      vib:(f&2)?dv.getUint16(14,true)/1000:null, vpk:(f&2)?dv.getUint16(16,true)/1000:null});
+    ciz();
+  });
+  await ch.startNotifications();
+  return dev;
+}
+
+/* ---------- Bluetooth: ELM327 (OBD) ---------- */
+const elm = {yaz:null, tampon:"", bekleyen:null, kuyruk:Promise.resolve()};
+async function obdBaglan(){
+  const dev = await navigator.bluetooth.requestDevice({acceptAllDevices:true,
+    optionalServices:[0xfff0,0xffe0,0x18f0,"e7810a71-73ae-499d-8c15-faa9aef0c3f2"]});
+  const srv = await dev.gatt.connect();
+  let bildir=null, yazici=null;
+  for(const s of await srv.getPrimaryServices()){
+    let chs=[]; try{chs=await s.getCharacteristics()}catch(e){continue}
+    for(const c of chs){
+      if(!bildir && (c.properties.notify||c.properties.indicate)) bildir=c;
+      if(!yazici && (c.properties.write||c.properties.writeWithoutResponse)) yazici=c;
+    }
+    if(bildir&&yazici) break;
+  }
+  if(!bildir||!yazici) throw new Error("Bu cihaz ELM327 gibi görünmüyor.");
+  const dec=new TextDecoder();
+  bildir.addEventListener("characteristicvaluechanged", ev=>{
+    elm.tampon += dec.decode(ev.target.value);
+    if(elm.tampon.includes(">") && elm.bekleyen){ const r=elm.tampon.replace(">",""); elm.tampon=""; const b=elm.bekleyen; elm.bekleyen=null; b(r); }
+  });
+  await bildir.startNotifications();
+  const enc=new TextEncoder();
+  elm.yaz = s => yazici.properties.write ? yazici.writeValue(enc.encode(s)) : yazici.writeValueWithoutResponse(enc.encode(s));
+  for(const k of ["ATZ","ATE0","ATL0","ATS1","ATH0","ATSP0"]) await elmKomut(k, k==="ATZ"?3000:2000);
+  return dev;
+}
+function elmKomut(cmd, zaman=3000){
+  const is = elm.kuyruk.then(()=>new Promise(res=>{
+    elm.tampon=""; let bitti=false;
+    elm.bekleyen = r=>{ if(!bitti){bitti=true;res(r)} };
+    setTimeout(()=>{ if(!bitti){bitti=true; elm.bekleyen=null; res("")} }, zaman);
+    elm.yaz(cmd+"\r").catch(()=>{ if(!bitti){bitti=true;res("")} });
+  }));
+  elm.kuyruk = is.catch(()=>{});
+  return is;
+}
+function pidBayt(r, pid){
+  const h=r.replace(/\s/g,"").toUpperCase(), i=h.indexOf("41"+pid);
+  if(i<0) return null; const b=[]; for(let j=i+4;j+2<=h.length && b.length<4;j+=2) b.push(parseInt(h.substr(j,2),16));
+  return b.some(isNaN)||!b.length ? null : b;
+}
+let obdDongu=false;
+async function obdOku(){
+  obdDongu=true;
+  while(obdDongu && mod==="obd"){
+    const o={};
+    let b=pidBayt(await elmKomut("010C"),"0C"); o.rpm = b&&b.length>=2 ? Math.round((b[0]*256+b[1])/4) : null;
+    b=pidBayt(await elmKomut("010D"),"0D"); o.hiz = b ? b[0] : null;
+    b=pidBayt(await elmKomut("0105"),"05"); o.sic = b ? b[0]-40 : null;
+    b=pidBayt(await elmKomut("0104"),"04"); o.yuk = b ? Math.round(b[0]*100/255) : null;
+    b=pidBayt(await elmKomut("0142"),"42"); o.v = b&&b.length>=2 ? (b[0]*256+b[1])/1000 : null;
+    if(mod!=="obd") break;
+    obdOrnek(o); ciz();
+    await new Promise(r=>setTimeout(r,500));
+  }
+}
+function dtcCoz(resp){
+  const kodlar=[];
+  for(const satir of resp.split(/[\r\n]+/)){
+    const l=satir.replace(/\s/g,"").toUpperCase();
+    if(!l.startsWith("43")) continue;
+    let veri=l.slice(2);
+    if((veri.length/2)%2===1) veri=veri.slice(2);   // CAN: ilk bayt kod sayısı
+    for(let i=0;i+4<=veri.length;i+=4){
+      const p=veri.substr(i,4); if(p==="0000") continue;
+      const b0=parseInt(p.substr(0,2),16);
+      const k="PCBU"[b0>>6] + ((b0>>4)&3) + p.substr(1,3);
+      if(!kodlar.includes(k)) kodlar.push(k);
+    }
+  }
+  return kodlar;
+}
+
+/* ---------- Bağlantı düğmeleri ---------- */
+async function baglan(){
+  if(!navigator.bluetooth){ btYok(); return; }
+  baglantiKes(true);
+  $("baglantiNot").className="note"; $("baglantiNot").textContent="Cihaz aranıyor…";
+  try{
+    ornekler=[]; kavramaOlaylari=[]; bulgular.clear(); obdKodlar=[]; obdKodOkundu=false;
+    if(P().tur==="obd"){ bleCihaz = await obdBaglan(); mod="obd"; obdOku(); }
+    else { bleCihaz = await golfBaglan(); mod="golf"; }
+    bleCihaz.addEventListener("gattserverdisconnected", ()=>{ if(mod==="golf"||mod==="obd"){ mod="yok"; $("baglantiNot").className="note err"; $("baglantiNot").textContent="Bağlantı koptu. Cihazın açık ve yakında olduğundan emin olup tekrar bağlanın."; ciz(); }});
+    $("baglantiNot").textContent = "Bağlandı: " + (bleCihaz.name||"cihaz");
+  }catch(e){
+    mod="yok";
+    if(e && (e.name==="SecurityError"||e.name==="NotAllowedError"||e.name==="TypeError")) btYok();
+    else { $("baglantiNot").className="note err"; $("baglantiNot").textContent = e && e.name==="NotFoundError" ? "Cihaz seçilmedi. Cihazın açık olduğundan emin olup tekrar deneyin." : "Bağlanılamadı: " + (e&&e.message||e); }
+  }
+  ciz();
+}
+function baglantiKes(sessiz){
+  if(simTimer){ clearInterval(simTimer); simTimer=null; }
+  obdDongu=false;
+  if(bleCihaz){ try{ bleCihaz.gatt.disconnect(); }catch(e){} bleCihaz=null; }
+  mod="yok";
+  if(!sessiz){ $("baglantiNot").className="note"; $("baglantiNot").textContent="Bağlantı kesildi."; ciz(); }
+}
+
+/* ---------- Çizim ---------- */
+function spark(degerler, renk){
+  const v=degerler.filter(x=>x!=null); if(v.length<2) return '<svg viewBox="0 0 100 34" preserveAspectRatio="none"></svg>';
+  let mn=Math.min(...v), mx=Math.max(...v); if(mx-mn<1e-6){mx+=1;mn-=1}
+  const n=degerler.length; let pts=[];
+  degerler.forEach((x,i)=>{ if(x==null) return; pts.push(((i/(n-1))*100).toFixed(1)+","+(31-((x-mn)/(mx-mn))*28).toFixed(1)); });
+  const son=pts[pts.length-1].split(",");
+  return `<svg viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+    <polygon points="0,34 ${pts.join(" ")} 100,34" fill="${renk}" fill-opacity="0.12"></polygon>
+    <polyline points="${pts.join(" ")}" fill="none" stroke="${renk}" stroke-width="1.6" vector-effect="non-scaling-stroke"></polyline>
+    <circle cx="${son[0]}" cy="${son[1]}" r="2.2" fill="${renk}"></circle></svg>`;
+}
+function aktifBulgular(){
+  const simdi=Date.now(), l=[];
+  bulgular.forEach(b=>{ if(simdi-b.son<60000) l.push(b); });
+  const sira={kritik:0,uyari:1,bilgi:2};
+  return l.sort((a,b)=>sira[a.seviye]-sira[b.seviye]||b.son-a.son);
+}
+const CHIP={ok:"Normal",uyari:"Uyarı",kritik:"Kritik",yok:"Sensör yok",bilgi:"Bilgi"};
+function tileSeviye(ids, akt){
+  let s="ok"; for(const b of akt){ if(ids.includes(b.id)){ if(b.seviye==="kritik") return "kritik"; if(b.seviye==="uyari") s="uyari"; } } return s;
+}
+function ciz(){
+  const pr=P(), akt=aktifBulgular(), golf=pr.tur==="golf";
+  const sonO = ornekler[ornekler.length-1] || {};
+  const css = getComputedStyle(document.documentElement);
+  const renk = {ok:css.getPropertyValue("--accent").trim(), uyari:css.getPropertyValue("--warn").trim(), kritik:css.getPropertyValue("--crit").trim()};
+  const veri = son(120);
+
+  // Bağlantı hapı
+  const pill=$("conn");
+  pill.className="pill "+(mod==="demo"?"demo":(mod==="golf"||mod==="obd")?"on":"");
+  $("connText").textContent = mod==="demo" ? "Demo" : mod==="golf" ? "Golf cihazı bağlı" : mod==="obd" ? "OBD bağlı" : "Bağlı değil";
+  $("btnKes").hidden = mod==="yok";
+  $("btnBaglan").textContent = golf ? "Golf cihazına bağlan" : "OBD adaptörüne bağlan";
+  $("senaryoAlan").hidden = !golf;
+  $("obdPanel").hidden = golf;
+  $("kalibPanel").hidden = !golf;
+
+  // Durum
+  const kr=akt.filter(b=>b.seviye==="kritik").length, uy=akt.filter(b=>b.seviye==="uyari").length;
+  const obdK = !golf ? obdKodlar.length : 0;
+  const d=$("durum");
+  if(mod==="yok"){ d.className="status"; d.innerHTML=`<div><b>Veri yok</b><div class="muted">Cihaza bağlanın veya demoyu başlatın.</div></div>`; }
+  else if(kr||uy||obdK){
+    d.className="status "+(kr?"crit":"warn");
+    const parcalar=[]; if(kr) parcalar.push(kr+" kritik"); if(uy) parcalar.push(uy+" uyarı"); if(obdK) parcalar.push(obdK+" arıza kodu");
+    d.innerHTML=`<span class="big mono">${kr+uy+obdK}</span><div><b>${parcalar.join(", ")}</b><div class="muted">${akt[0]?TANIM[akt[0].id].baslik:"OBD arıza kodları okundu"}. Ayrıntılar Arızalar sekmesinde.</div></div>`;
+  } else { d.className="status ok"; d.innerHTML=`<span class="big">✓</span><div><b>Sorun görünmüyor</b><div class="muted">${golf?"Kavrama, kayış, motor ve akü değerleri normal aralıkta.":"Canlı değerler normal. Kodları okumak için aşağıdaki düğmeyi kullanın."}</div></div>`; }
+
+  const n = akt.length + obdK; const bd=$("arizaSayi"); bd.hidden=!n; bd.textContent=n;
+
+  // Göstergeler
+  let tiles=[];
+  if(golf){
+    const ek = (x,f)=> x==null||Number.isNaN(x) ? "—" : f(x);
+    tiles=[
+      {ad:"Motor devri", v:ek(sonO.e,x=>x.toLocaleString("tr-TR")), u:"rpm", seri:veri.map(x=>x.e), ids:["regulator","tekleme"]},
+      {ad:"Arka kavrama", v:ek(sonO.d,x=>x.toLocaleString("tr-TR")), u:"rpm", seri:veri.map(x=>x.d), ids:["kayis_kopuk"]},
+      {ad:"CVT oranı", v:ek(sonO.oran,x=>x.toFixed(2)), u:": 1", seri:veri.map(x=>x.oran), ids:["kayis_kayma","arka_kavrama"]},
+      {ad:"Hız", v:ek(sonO.hiz,x=>x.toFixed(1)), u:"km/s", seri:veri.map(x=>x.hiz), ids:[]},
+      {ad:"Kavrama devri", v: kavramaOlaylari.length? kavramaOlaylari[kavramaOlaylari.length-1].toLocaleString("tr-TR"):"—", u:"rpm", seri:[], ids:["gec_kavrama","erken_kavrama"], alt:`Beklenen ${kavAralik().join("–")}`},
+      {ad:"Kayış sıcaklığı", v:ek(sonO.bt,x=>x.toFixed(0)), u:"°C", seri:veri.map(x=>x.bt), ids:["kayis_sicak"], yok:sonO.bt==null&&mod!=="yok"},
+      {ad:"Motor sıcaklığı", v:ek(sonO.et,x=>x.toFixed(0)), u:"°C", seri:veri.map(x=>x.et), ids:["motor_sicak"], yok:sonO.et==null&&mod!=="yok"},
+      {ad:"Akü", v:ek(sonO.v,x=>x.toFixed(2)), u:"V", seri:veri.map(x=>x.v), ids:["sarj_yok","asiri_sarj","aku_zayif","mars_dusus"]},
+      {ad:"Şanzıman titreşimi", v:ek(sonO.vib,x=>x.toFixed(2)), u:"g", seri:veri.map(x=>x.vib), ids:["titresim","darbe"], yok:sonO.vib==null&&mod!=="yok"}
+    ];
+  } else {
+    const ek = (x,f)=> x==null ? "—" : f(x);
+    tiles=[
+      {ad:"Motor devri", v:ek(sonO.rpm,x=>x.toLocaleString("tr-TR")), u:"rpm", seri:veri.map(x=>x.rpm), ids:[]},
+      {ad:"Hız", v:ek(sonO.hiz,x=>x), u:"km/s", seri:veri.map(x=>x.hiz), ids:[]},
+      {ad:"Soğutma suyu", v:ek(sonO.sic,x=>x), u:"°C", seri:veri.map(x=>x.sic), ids:["obd_sicak"]},
+      {ad:"Motor yükü", v:ek(sonO.yuk,x=>x), u:"%", seri:veri.map(x=>x.yuk), ids:[]},
+      {ad:"Akü / şarj", v:ek(sonO.v,x=>x.toFixed(2)), u:"V", seri:veri.map(x=>x.v), ids:["obd_voltaj"]}
+    ];
+  }
+  $("tiles").innerHTML = tiles.map(t=>{
+    const s = mod==="yok" ? null : t.yok ? "yok" : tileSeviye(t.ids,akt);
+    return `<div class="tile ${s||""}"><div class="head"><span class="label">${t.ad}</span>${s?`<span class="chip ${s}">${CHIP[s]}</span>`:""}</div>
+      <div><span class="v">${t.v}</span><span class="u">${t.u}</span></div>
+      ${t.alt?`<div class="meta">${t.alt}</div>`:spark(t.seri, renk[s==="uyari"||s==="kritik"?s:"ok"])}</div>`;
+  }).join("");
+
+  // Bulgular
+  let html="";
+  if(!golf && obdKodOkundu){
+    html += obdKodlar.length ? obdKodlar.map(k=>`<article class="finding uyari"><div class="top"><h3 class="mono">${k}</h3><span class="chip uyari">Arıza kodu</span></div>
+      <p>${DTC[k]||"Bu kod için kayıtlı açıklama yok."}</p><div class="meta">Sistem: ${dtcKategori(k)}</div></article>`).join("")
+      : `<div class="empty">Kayıtlı arıza kodu yok.</div>`;
+  }
+  html += akt.map(b=>{ const t=TANIM[b.id]; const sn=Math.max(0,Math.round((Date.now()-b.son)/1000));
+    return `<article class="finding ${b.seviye}"><div class="top"><h3>${t.baslik}</h3><span class="chip ${b.seviye}">${CHIP[b.seviye]}</span></div>
+      <p>${t.aciklama}</p><div class="meta mono">${b.deger} · ${b.sayi} kez · ${sn<2?"şimdi":sn+" sn önce"}</div>
+      <div class="label">Bakılacak yerler</div><ul>${t.kontrol.map(k=>`<li>${k}</li>`).join("")}</ul></article>`; }).join("");
+  if(!html) html = `<div class="empty">${mod==="yok"?"Bağlantı yok. Cihaza bağlanın veya demoyu başlatın.":golf?"Şu an arıza görünmüyor.":"Canlı değerlerde sorun yok. Arıza kodlarını okumak için Canlı veri sekmesindeki düğmeyi kullanın."}</div>`;
+  $("bulgular").innerHTML = html;
+}
+
+/* ---------- Olaylar ---------- */
+const ps=$("profil"); ps.innerHTML=Object.entries(PROFILLER).map(([k,v])=>`<option value="${k}">${v.ad}</option>`).join(""); ps.value=profilId;
+const ss=$("senaryo"); ss.innerHTML=Object.entries(SENARYOLAR).map(([k,v])=>`<option value="${k}">${v}</option>`).join(""); ss.value=senaryo;
+ps.addEventListener("change",()=>{ profilId=ps.value; yaz("profil",profilId); if(mod==="demo") demoBaslat(); else { baglantiKes(true); ornekler=[]; bulgular.clear(); ciz(); } });
+ss.addEventListener("change",()=>{ senaryo=ss.value; yaz("senaryo",senaryo); if(mod==="demo") demoBaslat(); });
+$("btnDemo").addEventListener("click",demoBaslat);
+$("btnBaglan").addEventListener("click",baglan);
+$("btnKes").addEventListener("click",()=>baglantiKes(false));
+$("btnTemizle").addEventListener("click",()=>{ bulgular.clear(); kavramaOlaylari=[]; obdKodOkundu=false; ciz(); });
+
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  aktifSekme=t.dataset.tab;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false"));
+  ["canli","ariza","kurulum"].forEach(s=>$("p-"+s).hidden = s!==aktifSekme);
+}));
+
+$("btnKodOku").addEventListener("click", async ()=>{
+  if(mod==="demo"){ obdKodlar=obdSimKodlar.slice(); obdKodOkundu=true; $("obdNot").textContent=`${obdKodlar.length} kod okundu (demo).`; ciz(); return; }
+  if(mod!=="obd"){ $("obdNot").textContent="Önce OBD adaptörüne bağlanın."; return; }
+  $("obdNot").textContent="Kodlar okunuyor…";
+  obdKodlar = dtcCoz(await elmKomut("03",5000)); obdKodOkundu=true;
+  $("obdNot").textContent = obdKodlar.length ? `${obdKodlar.length} kod okundu.` : "Kayıtlı arıza kodu yok.";
+  ciz();
+});
+let silOnay=false;
+$("btnKodSil").addEventListener("click", async ()=>{
+  const b=$("btnKodSil");
+  if(!silOnay){ silOnay=true; b.textContent="Emin misiniz? Silmek için tekrar basın"; setTimeout(()=>{silOnay=false;b.textContent="Kodları sil"},5000); return; }
+  silOnay=false; b.textContent="Kodları sil";
+  if(mod==="demo"){ obdKodlar=[]; obdSimKodlar=[]; obdKodOkundu=true; $("obdNot").textContent="Kodlar silindi (demo)."; ciz(); return; }
+  if(mod!=="obd"){ $("obdNot").textContent="Önce OBD adaptörüne bağlanın."; return; }
+  await elmKomut("04",5000); obdKodlar=[]; obdKodOkundu=true;
+  $("obdNot").textContent="Kodlar silindi. Arıza devam ediyorsa motor arıza lambası tekrar yanar."; ciz();
+});
+
+$("btnKalib").addEventListener("click",()=>{
+  const n=$("kalibNot");
+  if(mod==="yok"){ n.textContent="Önce cihaza bağlanın."; return; }
+  const hareketli=son(240).filter(x=>x.hiz>3 && x.vib!=null);
+  if(!kavramaOlaylari.length || hareketli.length<20){ n.textContent="Yeterli veri yok. En az bir kez durup kalkın ve 10–15 saniye sürün, sonra tekrar deneyin."; return; }
+  kalib[profilId]={kavrama:Math.round(ort(kavramaOlaylari)), titresim:Math.max(0.03,ort(hareketli.map(x=>x.vib)))};
+  yaz("kalib",kalib); bulgular.clear();
+  n.textContent=`Kaydedildi: kavrama ${kalib[profilId].kavrama} rpm, titreşim ${kalib[profilId].titresim.toFixed(2)} g.`; ciz();
+});
+$("btnKalibSil").addEventListener("click",()=>{ delete kalib[profilId]; yaz("kalib",kalib); $("kalibNot").textContent="Kalibrasyon sıfırlandı, marka değerleri kullanılıyor."; ciz(); });
+
+demoBaslat();
+})();
+</script>
