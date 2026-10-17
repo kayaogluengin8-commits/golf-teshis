@@ -93,17 +93,168 @@ td .mono{font-size:13px}
 .section{display:flex;flex-direction:column;gap:10px}
 .prose p{margin:0;max-width:68ch}
 @media (prefers-reduced-motion: no-preference){.tile .v{transition:color .2s}}
+
+/* --- Ana sekmeler --- */
+.mtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--sunk);padding:4px;border-radius:10px}
+.mtab{border:0;background:none;padding:9px 4px;border-radius:7px;font-weight:600;color:var(--muted);font-size:14px;line-height:1.2}
+.mtab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.intro{margin:0;max-width:68ch;color:var(--muted)}
+
+/* --- Belirtiler --- */
+.teshis{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.teshis{grid-template-columns:minmax(0,1fr)}}
+.grup{display:flex;flex-direction:column;gap:8px}
+.grup + .grup{margin-top:14px}
+.syms{display:flex;flex-wrap:wrap;gap:6px}
+.sym{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:8px 11px;font-size:14px;text-align:left;line-height:1.3}
+.sym[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sonuc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px)}
+@media (max-width:760px){.sonuc{position:static}}
+.aday{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.aday:first-of-type{border-top:0;padding-top:0}
+.aday .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.aday h3{font-size:18px}
+.bar{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+details summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--accent)}
+details ul{margin:6px 0 0;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.altbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:none;align-items:center;justify-content:space-between;gap:10px}
+.altbar .ozet{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+@media (max-width:760px){.altbar.goster{display:flex} body{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
+
+/* --- Telefon testi --- */
+.testler{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.sayac{font-family:var(--f-mono);font-size:40px;font-variant-numeric:tabular-nums;line-height:1}
+.olcum{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.olcum div{background:var(--sunk);border-radius:8px;padding:8px 10px;min-width:0}
+.olcum b{display:block;font-family:var(--f-mono);font-size:18px;font-variant-numeric:tabular-nums}
+.yorum{margin:0;padding:10px 12px;border-radius:8px;background:var(--sunk);font-size:14px}
+.yorum.uyari{background:var(--warn-soft)} .yorum.ok{background:var(--ok-soft)}
+input[type=text],input[type=tel],input[type=number],textarea{font:inherit;width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+textarea{min-height:70px;resize:vertical}
+
+/* --- Rapor --- */
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.rapor{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.rapor pre{margin:0;white-space:pre-wrap;word-break:break-word;font-family:var(--f-body);font-size:14px;line-height:1.55}
+a.btn{text-decoration:none;display:inline-block}
+a.btn.wa{background:var(--ok);border-color:var(--ok);color:#fff}
+.kayit{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);flex-wrap:wrap}
+.kayit .bilgi{min-width:0;flex:1 1 200px}
+.kayit .plaka{font-family:var(--f-mono);font-weight:500;letter-spacing:.04em}
 </style>
 
 <div class="wrap">
   <header>
     <div>
-      <div class="label">Benzinli golf aracı · CVT · OBD-II</div>
+      <div class="label">Benzinli golf aracı arıza tespiti</div>
       <h1>Golf Teşhis</h1>
     </div>
-    <span id="conn" class="pill"><span class="dot"></span><span id="connText">Bağlı değil</span></span>
+    <span id="conn" class="pill"><span class="dot"></span><span id="connText">Kit bağlı değil</span></span>
   </header>
 
+  <nav class="mtabs" role="tablist" aria-label="Bölümler">
+    <button class="mtab" role="tab" data-m="belirti" aria-selected="true">Belirtiler</button>
+    <button class="mtab" role="tab" data-m="telefon" aria-selected="false">Telefon testi</button>
+    <button class="mtab" role="tab" data-m="rapor" aria-selected="false">Rapor</button>
+    <button class="mtab" role="tab" data-m="kit" aria-selected="false">Kit</button>
+  </nav>
+
+  <!-- ============ BELİRTİLER ============ -->
+  <section id="m-belirti" class="section">
+    <p class="intro">Aracı dinleyin, kısa bir sürüş yapın, gördüğünüz belirtilere dokunun. Uygulama olası arızaları en olasıdan başlayarak sıralar.</p>
+    <div class="teshis">
+      <div id="belirtiListe"></div>
+      <aside class="panel sonuc" id="sonuclar" aria-live="polite">
+        <div class="row" style="justify-content:space-between">
+          <h2>Olası arızalar</h2>
+          <button class="btn" id="btnBelirtiSil">Temizle</button>
+        </div>
+        <div id="adaylar"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ TELEFON TESTİ ============ -->
+  <section id="m-telefon" class="section" hidden>
+    <p class="intro">Kit olmadan, telefonun kendi titreşim sensörü ve mikrofonuyla ön kontrol. Sonuçlar yaklaşıktır; aynı testi sağlam bir araçta da yapıp karşılaştırırsanız daha anlamlı olur.</p>
+    <p class="note err" id="sensorUyari" hidden></p>
+    <div class="testler">
+      <div class="panel">
+        <h2>Titreşim testi</h2>
+        <ol class="steps">
+          <li>Telefonu arka kasaya veya koltuğa, ekranı yukarı bakacak şekilde düz koyun.</li>
+          <li>Aşağıya yaklaşık hızınızı yazın, "Başlat"a basın.</li>
+          <li>20 saniye düz yolda sabit hızla gidin.</li>
+        </ol>
+        <div class="row">
+          <div class="field" style="flex:0 1 150px"><label class="label" for="titHiz">Hız (km/s)</label><input type="number" id="titHiz" value="15" min="3" max="40" inputmode="numeric"></div>
+          <button class="btn primary" id="btnTit">Titreşim testini başlat</button>
+        </div>
+        <div class="sayac" id="titSayac" hidden></div>
+        <div id="titSonuc"></div>
+      </div>
+      <div class="panel">
+        <h2>Ses testi</h2>
+        <ol class="steps">
+          <li>Motoru çalıştırın, araç dururken gaza hafifçe basın veya arka tekerler havadayken sabit gaz verin.</li>
+          <li>Telefonun mikrofonunu kayış ve kavramaya 30–50 cm uzaktan tutun.</li>
+          <li>"Başlat"a basın, 10 saniye kaydeder.</li>
+        </ol>
+        <div class="row"><button class="btn primary" id="btnSes">Ses testini başlat</button></div>
+        <div class="sayac" id="sesSayac" hidden></div>
+        <div id="sesSonuc"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RAPOR ============ -->
+  <section id="m-rapor" class="section" hidden>
+    <div class="panel">
+      <h2>Araç ve müşteri</h2>
+      <div class="form">
+        <div class="field"><label class="label" for="rPlaka">Plaka / araç no</label><input type="text" id="rPlaka" placeholder="34 ABC 123" autocomplete="off"></div>
+        <div class="field"><label class="label" for="rMarka">Marka / model</label><input type="text" id="rMarka" list="markalar" placeholder="Club Car DS"></div>
+        <div class="field"><label class="label" for="rMusteri">Müşteri adı</label><input type="text" id="rMusteri" autocomplete="off"></div>
+        <div class="field"><label class="label" for="rTel">Müşteri telefonu</label><input type="tel" id="rTel" placeholder="05xx xxx xx xx" autocomplete="off"></div>
+        <div class="field"><label class="label" for="rSaat">Çalışma saati / km</label><input type="text" id="rSaat" autocomplete="off"></div>
+      </div>
+      <datalist id="markalar"><option value="Club Car DS"><option value="Club Car Precedent"><option value="E-Z-GO TXT"><option value="E-Z-GO RXV"><option value="Yamaha G16"><option value="Yamaha G22"><option value="Yamaha Drive"><option value="Yamaha Drive2 EFI"></datalist>
+      <div class="field"><label class="label" for="rNot">Usta notu</label><textarea id="rNot" placeholder="Yapılan kontrol, değişen parça, öneri…"></textarea></div>
+    </div>
+
+    <div class="rapor">
+      <div class="row" style="justify-content:space-between"><h2>Rapor önizleme</h2><span class="meta">Belirtiler ve testlerden otomatik dolar</span></div>
+      <pre id="raporMetin"></pre>
+      <div class="row">
+        <a class="btn wa" id="btnWa" href="#" target="_blank" rel="noopener">WhatsApp'ta gönder</a>
+        <button class="btn" id="btnKopya">Metni kopyala</button>
+        <button class="btn primary" id="btnKaydet">Kaydet</button>
+        <button class="btn" id="btnYeni">Yeni araç</button>
+      </div>
+      <p class="note" id="raporNot"></p>
+    </div>
+
+    <div class="section">
+      <h2>Kayıtlı raporlar</h2>
+      <p class="note">Kayıtlar sadece bu telefonda saklanır.</p>
+      <div class="list" id="kayitlar"></div>
+    </div>
+
+    <details class="panel">
+      <summary>İşletme bilgileri (raporun başında yazar)</summary>
+      <div class="form" style="margin-top:10px">
+        <div class="field"><label class="label" for="iAd">İşletme adı</label><input type="text" id="iAd" placeholder="Usta Golf Servis"></div>
+        <div class="field"><label class="label" for="iTel">İşletme telefonu</label><input type="tel" id="iTel"></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ KİT ============ -->
+  <section id="m-kit" class="section" hidden>
+  <p class="intro">Taşınabilir ölçüm kiti alındığında kullanılır. Kit yoksa demo verisiyle nasıl çalıştığını görebilirsiniz.</p>
   <section class="panel" aria-label="Araç ve bağlantı">
     <div class="row">
       <div class="field">
@@ -173,19 +324,20 @@ td .mono{font-size:13px}
       <tbody>
         <tr><td><b>ESP32 DevKitC</b> (WROOM-32D, 38 pin)</td><td class="mono">1</td><td>Cihazın beyni, Bluetooth ile telefona gönderir</td><td class="mono">250–500 ₺</td></tr>
         <tr><td><b>12V → 5V DC-DC dönüştürücü</b> (LM2596 veya mini 12V-5V USB)</td><td class="mono">1</td><td>Akü 12V'unu ESP32 için 5V'a düşürür</td><td class="mono">60–150 ₺</td></tr>
-        <tr><td><b>NJK-5002C Hall sensör</b> (NPN, 5–24V)</td><td class="mono">2</td><td>Arka kavrama ve teker devri (su geçirmez, sanayiye dayanıklı)</td><td class="mono">100–200 ₺/ad.</td></tr>
-        <tr><td><b>Neodyum mıknatıs</b> 10×3 mm</td><td class="mono">4</td><td>Kavramaya ve tekere yapıştırılır</td><td class="mono">40–80 ₺</td></tr>
+        <tr><td><b>Akü maşası takımı</b> (kırmızı/siyah) + <b>2A sigorta</b> + <b>1N5822 diyot</b></td><td class="mono">1</td><td>Kiti aküden besler, ters bağlantıya karşı korur</td><td class="mono">100–200 ₺</td></tr>
+        <tr><td><b>Endüktif devir pensi</b> (mandal tipi, "takometre pensi"), yoksa klipsli ferrit + sarma tel</td><td class="mono">1</td><td>Buji kablosuna kıstırılır, motor devri</td><td class="mono">150–300 ₺</td></tr>
+        <tr><td><b>E3F-DS30C4 optik sensör</b> (NPN, 6–36V) + <b>yansıtıcı bant</b></td><td class="mono">1–2</td><td>Arka kavrama (ve istenirse teker) devri, temassız</td><td class="mono">150–300 ₺/ad.</td></tr>
+        <tr><td><b>Mıknatıslı komparatör ayağı</b> (esnek kollu)</td><td class="mono">2</td><td>Optik ve kızılötesi sensörü şasiye tutturur</td><td class="mono">300–500 ₺</td></tr>
         <tr><td><b>MLX90614 (GY-906)</b> kızılötesi sıcaklık modülü</td><td class="mono">1</td><td>Kayışın sıcaklığını temassız ölçer</td><td class="mono">250–450 ₺</td></tr>
-        <tr><td><b>MPU6050 (GY-521)</b> ivme sensörü</td><td class="mono">1</td><td>Şanzıman/diferansiyel titreşimi</td><td class="mono">80–150 ₺</td></tr>
-        <tr><td><b>MAX6675 modül + K tipi buji altı halka termokupl</b> (14 mm)</td><td class="mono">1</td><td>Motor (silindir kapağı) sıcaklığı</td><td class="mono">150–300 ₺</td></tr>
-        <tr><td><b>PC817 optokuplör, 1N4148 diyot, 1 kΩ direnç</b></td><td class="mono">1'er</td><td>Buji kablosundan güvenli devir sinyali</td><td class="mono">20–40 ₺</td></tr>
-        <tr><td><b>Dirençler:</b> 100 kΩ, 22 kΩ, 3 × 10 kΩ; <b>100 nF</b> kondansatör</td><td class="mono">—</td><td>Voltaj ölçümü ve sinyal hatları</td><td class="mono">20–40 ₺</td></tr>
-        <tr><td><b>Sigortalı kablo yuvası + 2A sigorta</b></td><td class="mono">1</td><td>Kısa devreye karşı koruma</td><td class="mono">40–80 ₺</td></tr>
-        <tr><td><b>IP65 plastik kutu</b>, kablo rakoru, delikli pertinaks, ekranlı 4 damarlı kablo, makaron, kelepçe</td><td class="mono">—</td><td>Montaj, su ve toz koruması</td><td class="mono">200–400 ₺</td></tr>
+        <tr><td><b>MPU6050 (GY-521)</b> + küçük alüminyum kutu + <b>neodyum çanak mıknatıs</b></td><td class="mono">1</td><td>Mıknatısla şanzımana yapışan titreşim başlığı</td><td class="mono">150–250 ₺</td></tr>
+        <tr><td><b>MAX6675 modül + mıknatıslı K tipi termokupl prob</b></td><td class="mono">1</td><td>Motor (silindir kapağı) sıcaklığı</td><td class="mono">150–300 ₺</td></tr>
+        <tr><td><b>PC817 optokuplör, 1N4148 diyot, dirençler</b> (100 kΩ, 22 kΩ, 1 kΩ, 3 × 10 kΩ), 100 nF</td><td class="mono">—</td><td>Devir sinyali ve voltaj ölçümü</td><td class="mono">40–80 ₺</td></tr>
+        <tr><td><b>GX16 konnektör</b> (4 ve 5 pin) + ekranlı kablo (her sensöre 2 m)</td><td class="mono">6</td><td>Sensörler kutuya takılıp çıkarılır</td><td class="mono">200–350 ₺</td></tr>
+        <tr><td><b>IP65 kutu</b>, delikli pertinaks, kelepçe + <b>takım çantası</b></td><td class="mono">—</td><td>Kitin taşınması ve korunması</td><td class="mono">300–550 ₺</td></tr>
         <tr><td><b>Otomobil için:</b> ELM327 <b>Bluetooth LE (4.0)</b> OBD adaptörü</td><td class="mono">1</td><td>Sadece otomobil modunda gerekir. Klasik Bluetooth 2.0 modeller uygulamaya bağlanamaz.</td><td class="mono">300–800 ₺</td></tr>
       </tbody>
     </table></div>
-    <p class="note">Golf cihazı toplamı kabaca <b>1.500–2.500 ₺</b>.</p>
+    <p class="note">Taşınabilir kit toplamı kabaca <b>2.000–3.000 ₺</b>.</p>
 
     <div class="section prose">
       <h2>Bağlantı şeması</h2>
@@ -194,29 +346,32 @@ td .mono{font-size:13px}
     <div class="scroll"><table>
       <thead><tr><th>Sensör</th><th>Sensör ucu</th><th>Bağlandığı yer</th></tr></thead>
       <tbody>
-        <tr><td rowspan="2"><b>Güç</b></td><td>Akü + (sigortadan, kontak sonrası)</td><td>DC-DC giriş +; çıkış 5V → ESP32 <span class="mono">5V/VIN</span></td></tr>
-        <tr><td>Akü −</td><td>DC-DC giriş −, ESP32 <span class="mono">GND</span> (tüm GND'ler ortak)</td></tr>
-        <tr><td rowspan="2"><b>Motor devri</b></td><td>Buji kablosuna 8–10 tur sarılmış izoleli tel</td><td>1N4148 (ters paralel) + 1 kΩ üzerinden PC817 LED ucu</td></tr>
+        <tr><td rowspan="2"><b>Güç</b></td><td>Kırmızı akü maşası → 2A sigorta → 1N5822 diyot</td><td>DC-DC giriş +; çıkış 5V → ESP32 <span class="mono">5V/VIN</span></td></tr>
+        <tr><td>Siyah akü maşası</td><td>DC-DC giriş −, ESP32 <span class="mono">GND</span> (tüm GND'ler ortak)</td></tr>
+        <tr><td rowspan="2"><b>Motor devri</b> (pens)</td><td>Pensin iki ucu</td><td>1N4148 (ters paralel) + 1 kΩ üzerinden PC817 LED ucu</td></tr>
         <tr><td>PC817 kollektör / emiter</td><td>Kollektör → <span class="mono">GPIO27</span> (+10 kΩ ile 3,3V'a); emiter → GND</td></tr>
-        <tr><td rowspan="2"><b>Arka kavrama</b> (NJK-5002C)</td><td>Kahverengi / mavi</td><td>12V (sigortalı) / GND</td></tr>
+        <tr><td rowspan="2"><b>Arka kavrama</b> (E3F-DS30C4)</td><td>Kahverengi / mavi</td><td>Sigorta sonrası 12V / GND</td></tr>
         <tr><td>Siyah (sinyal)</td><td><span class="mono">GPIO26</span> (+10 kΩ ile 3,3V'a)</td></tr>
-        <tr><td><b>Teker</b> (NJK-5002C, isteğe bağlı)</td><td>Kahverengi / mavi / siyah</td><td>12V / GND / <span class="mono">GPIO25</span> (+10 kΩ ile 3,3V'a)</td></tr>
+        <tr><td><b>Teker</b> (2. optik sensör, isteğe bağlı)</td><td>Kahverengi / mavi / siyah</td><td>12V / GND / <span class="mono">GPIO25</span> (+10 kΩ ile 3,3V'a)</td></tr>
         <tr><td><b>MLX90614</b> kayış sıcaklığı</td><td>VIN, GND, SDA, SCL</td><td>3,3V, GND, <span class="mono">GPIO21</span>, <span class="mono">GPIO22</span></td></tr>
-        <tr><td><b>MPU6050</b> titreşim</td><td>VCC, GND, SDA, SCL</td><td>3,3V, GND, <span class="mono">GPIO21</span>, <span class="mono">GPIO22</span> (MLX ile aynı hat)</td></tr>
+        <tr><td><b>MPU6050</b> titreşim başlığı</td><td>VCC, GND, SDA, SCL</td><td>3,3V, GND, <span class="mono">GPIO21</span>, <span class="mono">GPIO22</span> (MLX ile aynı hat)</td></tr>
         <tr><td><b>MAX6675</b> motor sıcaklığı</td><td>VCC, GND, SCK, CS, SO</td><td>3,3V, GND, <span class="mono">GPIO18</span>, <span class="mono">GPIO5</span>, <span class="mono">GPIO19</span></td></tr>
-        <tr><td><b>Akü voltajı</b></td><td>Akü + → 100 kΩ → nokta → 22 kΩ → GND</td><td>Ortadaki nokta → <span class="mono">GPIO34</span>; 22 kΩ'a paralel 100 nF</td></tr>
+        <tr><td><b>Akü voltajı</b></td><td>Sigortadan sonra, diyottan önce → 100 kΩ → nokta → 22 kΩ → GND</td><td>Ortadaki nokta → <span class="mono">GPIO34</span>; 22 kΩ'a paralel 100 nF</td></tr>
       </tbody>
     </table></div>
 
     <div class="section">
-      <h2>Araca montaj</h2>
+      <h2>Kiti araca takma (5 dakika)</h2>
       <ol class="steps">
-        <li><b>Arka kavrama mıknatısları:</b> Arka kavramanın sabit kasnağının dış yüzüne, birbirine tam karşı (180°) iki mıknatısı aynı kutup dışarı bakacak şekilde epoksiyle yapıştırın. Hall sensörü kavrama kapağına bir L braketle, mıknatısa 5–8 mm mesafede sabitleyin.</li>
-        <li><b>Kayış sıcaklığı:</b> Kavrama kapağına küçük bir delik açın, MLX90614'ü kayışa 2–5 cm mesafeden bakacak şekilde yerleştirin. Merceği tozdan korumak için etrafına kısa bir boru geçirin.</li>
-        <li><b>Titreşim:</b> MPU6050'yi diferansiyel (şanzıman) gövdesindeki bir cıvataya, metal bir plakayla sıkıca bağlayın. Çift taraflı bant yeterli değildir, titreşimi yutar.</li>
-        <li><b>Motor sıcaklığı:</b> Bujiyi sökün, halka termokuplu altına geçirip bujiyi tekrar sıkın.</li>
-        <li><b>Devir teli:</b> İzoleli teli buji kablosunun üzerine 8–10 tur sarın, bantlayın. ESP32 kutusunu ve kabloları ateşleme bobininden uzak tutun, sinyal kablolarında ekranlı kablo kullanın.</li>
-        <li><b>Kutu:</b> ESP32, DC-DC ve dirençleri IP65 kutuya koyup koltuk altına, egzozdan uzak bir yere sabitleyin. I2C kabloları (MLX ve MPU) 1 metreyi geçmesin.</li>
+        <li><b>Motor kapalıyken</b> koltuğu kaldırın. Kit kutusunu koltuk altına veya arka kasaya, egzozdan uzak bir yere koyun.</li>
+        <li><b>Akü maşaları:</b> Önce kırmızıyı + kutba, sonra siyahı − kutba takın. Ters takılırsa sigorta korur, hiçbir şey yanmaz.</li>
+        <li><b>Devir pensi:</b> Motordan çıkan kalın buji kablosuna kıstırın.</li>
+        <li><b>Yansıtıcı bant:</b> Arka kavrama kasnağının dış yüzüne, temiz bir yere 2–3 cm'lik bir parça yapıştırın (ilk seferde bir kez yapılır, sonra orada kalabilir).</li>
+        <li><b>Optik sensör:</b> Mıknatıslı ayağı şasiye yapıştırın, sensörü banda 5–15 cm uzaktan doğrultun. Sensörün arkasındaki ışık, bant önünden geçerken yanıp sönmeli.</li>
+        <li><b>Kızılötesi sensör:</b> İkinci mıknatıslı ayakla kayışa 3–5 cm uzaktan baktırın.</li>
+        <li><b>Titreşim başlığı:</b> Arka aksın ortasındaki diferansiyel gövdesine mıknatısla yapıştırın. <b>Motor sıcaklık probu:</b> Silindir kapağına (bujinin olduğu kanatçıklı kısım) mıknatısla yapıştırın.</li>
+        <li><b>Kablolar:</b> Kelepçeyle sabitleyin; kayışa, kasnaklara ve egzoza değmesin. Sensör kabloları 2 metreyi geçmesin.</li>
+        <li>Telefonda <b>Kit</b> sekmesinden bağlanın, aracı kısa bir sürüşe çıkarın. Bitince kiti ters sırayla sökün.</li>
       </ol>
     </div>
 
@@ -233,13 +388,19 @@ td .mono{font-size:13px}
     <div class="section">
       <h2>Uygulamayı telefonda açma</h2>
       <ol class="steps">
-        <li>Bu sayfa içinde demo modu çalışır, ama güvenlik nedeniyle Bluetooth'a erişemez.</li>
-        <li>Gerçek bağlantı için size verilen <span class="mono">golf_teshis.html</span> dosyasını ücretsiz bir barındırmaya (ör. Netlify Drop'a sürükle-bırak veya GitHub Pages) yükleyin ve linki <b>Android telefonda Chrome</b> ile açın. Chrome menüsünden "Ana ekrana ekle" ile uygulama gibi kullanabilirsiniz.</li>
-        <li>iPhone'da Safari Bluetooth'u desteklemez; App Store'daki <b>Bluefy</b> tarayıcısıyla açılabilir.</li>
+        <li>Uygulamayı GitHub Pages linkinizden açın. Claude içindeki önizlemede Bluetooth, mikrofon ve hareket sensörü çalışmaz.</li>
+        <li><b>Android:</b> Chrome ile açın, menüden "Ana ekrana ekle".</li>
+        <li><b>iPhone:</b> Chrome ve Safari Bluetooth'a izin vermez. Kit için App Store'daki ücretsiz <b>Bluefy</b> tarayıcısıyla açın.</li>
         <li>Telefonda Bluetooth ve konum açık olsun. <b>Cihaza bağlan</b>'a basınca listede <span class="mono">GolfTeshis</span> görünür.</li>
       </ol>
     </div>
   </section>
+  </section>
+</div>
+
+<div class="altbar" id="altbar">
+  <span class="ozet" id="altOzet"></span>
+  <button class="btn primary" id="btnAltGit">Sonuçlar</button>
 </div>
 
 <script>
@@ -629,7 +790,7 @@ function ciz(){
   // Bağlantı hapı
   const pill=$("conn");
   pill.className="pill "+(mod==="demo"?"demo":(mod==="golf"||mod==="obd")?"on":"");
-  $("connText").textContent = mod==="demo" ? "Demo" : mod==="golf" ? "Golf cihazı bağlı" : mod==="obd" ? "OBD bağlı" : "Bağlı değil";
+  $("connText").textContent = mod==="demo" ? "Demo" : mod==="golf" ? "Golf cihazı bağlı" : mod==="obd" ? "OBD bağlı" : "Kit bağlı değil";
   $("btnKes").hidden = mod==="yok";
   $("btnBaglan").textContent = golf ? "Golf cihazına bağlan" : "OBD adaptörüne bağlan";
   $("senaryoAlan").hidden = !golf;
@@ -706,9 +867,9 @@ $("btnBaglan").addEventListener("click",baglan);
 $("btnKes").addEventListener("click",()=>baglantiKes(false));
 $("btnTemizle").addEventListener("click",()=>{ bulgular.clear(); kavramaOlaylari=[]; obdKodOkundu=false; ciz(); });
 
-document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+document.querySelectorAll("#m-kit .tab").forEach(t=>t.addEventListener("click",()=>{
   aktifSekme=t.dataset.tab;
-  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false"));
+  document.querySelectorAll("#m-kit .tab").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false"));
   ["canli","ariza","kurulum"].forEach(s=>$("p-"+s).hidden = s!==aktifSekme);
 }));
 
@@ -742,6 +903,329 @@ $("btnKalib").addEventListener("click",()=>{
 });
 $("btnKalibSil").addEventListener("click",()=>{ delete kalib[profilId]; yaz("kalib",kalib); $("kalibNot").textContent="Kalibrasyon sıfırlandı, marka değerleri kullanılıyor."; ciz(); });
 
-demoBaslat();
+window.kitApi = { durum: ()=>({mod, profil:P().ad, akt:aktifBulgular().map(b=>({baslik:TANIM[b.id].baslik, seviye:b.seviye, deger:b.deger})), kodlar:obdKodlar.map(k=>k+" "+(DTC[k]||""))}), demo: ()=>{ if(mod==="yok") demoBaslat(); } };
+ciz();
+})();
+</script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+function oku(k,v){try{const x=localStorage.getItem("gt_"+k);return x?JSON.parse(x):v}catch(e){return v}}
+function yaz(k,v){try{localStorage.setItem("gt_"+k,JSON.stringify(v))}catch(e){}}
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ================= BELİRTİLER ================= */
+const GRUPLAR = [
+ {ad:"Hareket ve kavrama", l:[
+  ["s1","Motor bağırıyor ama araç hızlanmıyor"],["s2","Kalkışta sarsıyor, vuruntulu kalkıyor"],
+  ["s3","Gaz verince geç hareket ediyor"],["s4","Rölantide kendi kendine yürümeye çalışıyor"],
+  ["s5","Yokuşta güç kaybediyor veya duruyor"],["s6","Son hıza çıkamıyor"],
+  ["s7","Yanık kayış / lastik kokusu"],["s8","Kavrama tarafından ötme, cıyaklama"]]},
+ {ad:"Motor", l:[
+  ["m1","Zor çalışıyor veya hiç çalışmıyor"],["m2","Marş yavaş dönüyor, tık tık ediyor"],
+  ["m3","Tekliyor, düzensiz çalışıyor"],["m4","Rölantide stop ediyor"],
+  ["m5","Egzozdan siyah duman"],["m6","Egzozdan mavi veya beyaz duman"],
+  ["m7","Motor aşırı ısınıyor, yanık yağ kokusu"],["m8","Patlama / geri tepme sesi"],
+  ["m9","Yakıt tüketimi arttı"],["m10","Motordan tıkırtı (supap sesi)"]]},
+ {ad:"Akü ve elektrik", l:[
+  ["e1","Akü sürekli bitiyor"],["e2","Farlar sönük, gösterge düşük"]]},
+ {ad:"Şanzıman ve arka aks", l:[
+  ["t1","Arkadan uğultu, hızla artan ses"],["t2","İleri/geri değişirken vuruntu, takırtı"],
+  ["t3","Vites (ileri/geri) zor geçiyor veya geçmiyor"],["t4","Diferansiyelden yağ kaçağı"],
+  ["t5","Virajda arkadan tıkırtı"]]},
+ {ad:"Fren, direksiyon, yürüyen", l:[
+  ["f1","Fren tutmuyor, pedal boşta"],["f2","Frende ses veya sürtme"],
+  ["f3","Direksiyon boşluklu, araç bir yana çekiyor"],["f4","Hızlanınca araç titriyor"],
+  ["f5","Tümseklerde vuruntu sesi"]]}
+];
+const BELIRTI_AD = {}; GRUPLAR.forEach(g=>g.l.forEach(([k,a])=>BELIRTI_AD[k]=a));
+
+const ARIZA = {
+ kayis:{ad:"Kayış aşınmış veya kayıyor", sis:"CVT", w:{s1:3,s5:2,s6:2,s7:3,s8:2,f4:1},
+  k:["Kayış genişliğini yeni kayışla karşılaştırın; belirgin darsa değiştirin","Kayışta parlama, çatlak, yanık izi","Kavrama yüzeylerindeki yağ ve kiri fren temizleyiciyle temizleyin"]},
+ onkav:{ad:"Ön kavrama aşınmış veya kirli", sis:"CVT", w:{s2:3,s3:3,s1:1,s5:1,s6:2,s8:1},
+  k:["Ön kavrama ağırlık ve makaralarında aşınma","Burçlar sıkışmış olabilir; söküp temizleyin","Kavrama yüzeylerinde basamaklanma"]},
+ onkav_yay:{ad:"Ön kavrama yayı zayıf veya kırık", sis:"CVT", w:{s4:3,s2:1},
+  k:["Ön kavrama yayını kontrol edin","Rölanti devri çok yüksek mi; gaz teli ayarı"]},
+ arkav:{ad:"Arka kavrama yayı veya rampası sorunlu", sis:"CVT", w:{s1:2,s5:3,s6:1,s2:1},
+  k:["Arka kavrama yayı ve rampa (cam) burçları","Hareketli kasnak mil üzerinde sıkışmış olabilir","Kavrama yüzeyine yağ sürülmemeli"]},
+ regulator:{ad:"Regülatör (hız sınırlayıcı) ayarı veya teli", sis:"Motor", w:{s6:3,s1:1},
+  k:["Regülatör teli ve ayar somunu","Gaz teli tam açılıyor mu"]},
+ gazsw:{ad:"Gaz pedalı şalteri / gaz teli", sis:"Elektrik", w:{m1:2,m4:1,s6:1},
+  k:["Gaz pedalındaki mikroşalter (pedala basınca motoru çalıştıran)","Gaz teli gerginliği","Pedal yay ve bağlantıları"]},
+ karb:{ad:"Karbüratör kirli veya jet tıkalı", sis:"Yakıt", w:{m3:3,m4:3,m1:2,m5:2,m8:2,m9:2,s5:1,s6:1},
+  k:["Karbüratörü söküp jetleri temizleyin","Şamandıra seviyesi","Emme manifoldunda hava kaçağı"]},
+ hava:{ad:"Hava filtresi tıkalı", sis:"Yakıt", w:{m5:3,m9:2,s5:1,s6:1,m3:1},
+  k:["Hava filtresini çıkarıp kontrol edin, gerekirse değiştirin","Hava kutusu ve hortumlarında tıkanıklık"]},
+ buji:{ad:"Buji, buji kablosu veya bobin", sis:"Ateşleme", w:{m3:3,m1:2,m8:2,m4:1,s5:1},
+  k:["Bujide kurum, yağlanma, elektrot aralığı","Buji kablosu ve başlığında çatlak","Bobin hava aralığı ve kıvılcım testi"]},
+ yakit:{ad:"Yakıt pompası veya yakıt filtresi", sis:"Yakıt", w:{m1:2,m3:2,s5:2,m4:1},
+  k:["Yakıt filtresi tıkalı mı","Vakum (diyafram) yakıt pompası ve hortumları","Depoda su veya tortu"]},
+ supap:{ad:"Supap ayarı bozuk", sis:"Motor", w:{m10:3,m8:2,m1:2,m3:1,s5:1},
+  k:["Supap boşluğunu katalog değerine göre ayarlayın","Golf motorlarında belirli çalışma saatlerinde ayar gerekir"]},
+ segman:{ad:"Motor yağ yakıyor (segman / supap keçesi)", sis:"Motor", w:{m6:3,s5:1,m1:1,m7:1},
+  k:["Kompresyon testi yapın","Yağ eksiltme miktarını takip edin","Karter havalandırma hortumu"]},
+ sogutma:{ad:"Soğutma yetersiz veya yağ az", sis:"Motor", w:{m7:3,s5:1},
+  k:["Motor kanatçıkları ve fan kapağındaki ot, çamuru temizleyin","Yağ seviyesi ve rengi","Soğutma fanı kanatları"]},
+ aku:{ad:"Akü zayıf", sis:"Elektrik", w:{m2:3,e1:2,e2:2,m1:1},
+  k:["Aküyü tam şarj edip yük testi yapın","Kutup başlarını temizleyip sıkın","Araç dururken akım kaçağı"]},
+ dinamo:{ad:"Marş-şarj dinamosu veya regülatörü", sis:"Elektrik", w:{e1:3,e2:3,m2:2},
+  k:["Motor çalışırken akü voltajı 13,5–14,5 V olmalı","Dinamo fırçaları ve kollektör","Voltaj regülatörü"]},
+ dinamo_kayis:{ad:"Dinamo kayışı gevşek veya aşınmış", sis:"Elektrik", w:{e1:2,e2:2,m2:1,s8:1},
+  k:["Dinamo kayışı gerginliği","Kayışta çatlak ve parlama"]},
+ diferansiyel:{ad:"Diferansiyel dişli veya rulman aşınması", sis:"Şanzıman", w:{t1:3,t5:2,t4:1,t2:1},
+  k:["Diferansiyel yağını boşaltıp bakın; metal talaş varsa dişli aşınmış","Yağ seviyesi","Dişli boşluğu"]},
+ aks:{ad:"Aks rulmanı", sis:"Şanzıman", w:{t1:2,t4:2,f4:1,t5:1},
+  k:["Arka tekerleri kaldırıp teker boşluğu ve rulman sesi","Aks keçesinden yağ sızıntısı"]},
+ vites:{ad:"İleri/geri vites mekanizması", sis:"Şanzıman", w:{t2:3,t3:3},
+  k:["Vites kolu teli ve ayarı","Vites çatalı ve kayar dişli","Araç tam durmadan vites değiştirilmemeli"]},
+ keçe:{ad:"Diferansiyel veya aks keçesi", sis:"Şanzıman", w:{t4:3},
+  k:["Kaçağın yerini temizleyip tespit edin","Havalandırma tapası tıkalıysa keçeyi zorlar"]},
+ fren:{ad:"Fren balatası veya fren teli ayarı", sis:"Fren", w:{f1:3,f2:3},
+  k:["Balata kalınlığı","Fren teli gerginliği ve dengeleyici","Kampana içinde toz ve yağ"]},
+ ontakim:{ad:"Ön takım (rot, rotil, pim) boşluğu", sis:"Direksiyon", w:{f3:3,f5:2,f4:1},
+  k:["Rot başları ve rotiller","Pim (king pin) burçları","Rot ayarı"]},
+ amort:{ad:"Amortisör veya makas burçları", sis:"Süspansiyon", w:{f5:3,f4:1},
+  k:["Amortisörde yağ sızıntısı","Makas burçları ve askı"]},
+ balans:{ad:"Teker balansı, jant veya lastik", sis:"Yürüyen", w:{f4:3,f3:1},
+  k:["Lastik basınçları eşit mi","Jant eğriliği","Lastikte düzensiz aşınma"]},
+ takoz:{ad:"Motor takozu", sis:"Motor", w:{s2:2,f4:1,t2:1},
+  k:["Motor takozlarında yırtılma","Motor bağlantı cıvataları"]}
+};
+
+let secili = new Set(oku("belirtiler",[]).filter(k=>BELIRTI_AD[k]));
+
+function belirtiCiz(){
+  $("belirtiListe").innerHTML = GRUPLAR.map(g=>`<div class="grup"><div class="label">${g.ad}</div><div class="syms">${
+    g.l.map(([k,a])=>`<button class="sym" data-k="${k}" aria-pressed="${secili.has(k)}">${a}</button>`).join("")}</div></div>`).join("");
+}
+function adaylarHesapla(){
+  const l=[];
+  for(const [id,a] of Object.entries(ARIZA)){
+    let p=0,n=0; for(const s of secili){ if(a.w[s]){p+=a.w[s];n++;} }
+    if(p>0) l.push({id,a,p,n});
+  }
+  l.sort((x,y)=>y.p-x.p||y.n-x.n);
+  return l.slice(0,6);
+}
+function etiket(r){ return r>=0.75?"En olası":r>=0.45?"Olası":"Daha düşük"; }
+function sonucCiz(){
+  const l=adaylarHesapla(), top=l.length?l[0].p:1;
+  $("adaylar").innerHTML = !secili.size ? `<div class="empty">Henüz belirti seçilmedi. Soldaki listeden araçta gördüklerinize dokunun.</div>`
+   : !l.length ? `<div class="empty">Bu belirtiler için kayıtlı arıza yok.</div>`
+   : l.map((x,i)=>{ const r=x.p/top; return `<div class="aday"><div class="top"><h3>${x.a.ad}</h3><span class="chip ${r>=0.75?"kritik":r>=0.45?"uyari":"bilgi"}">${etiket(r)}</span></div>
+      <div class="bar"><i style="width:${Math.round(r*100)}%"></i></div>
+      <div class="meta">${x.a.sis} · ${x.n} belirtiyle uyumlu</div>
+      <details${i===0?" open":""}><summary>Bakılacak yerler</summary><ul>${x.a.k.map(t=>`<li>${t}</li>`).join("")}</ul></details></div>`; }).join("");
+  const ab=$("altbar");
+  ab.classList.toggle("goster", secili.size>0 && aktifM==="belirti");
+  $("altOzet").textContent = l.length ? "En olası: "+l[0].a.ad : secili.size+" belirti seçildi";
+  raporGuncelle();
+}
+$("belirtiListe").addEventListener("click",e=>{
+  const b=e.target.closest(".sym"); if(!b) return;
+  const k=b.dataset.k; secili.has(k)?secili.delete(k):secili.add(k);
+  b.setAttribute("aria-pressed",secili.has(k)); yaz("belirtiler",[...secili]); sonucCiz();
+});
+$("btnBelirtiSil").addEventListener("click",()=>{ secili.clear(); yaz("belirtiler",[]); belirtiCiz(); sonucCiz(); });
+$("btnAltGit").addEventListener("click",()=>$("sonuclar").scrollIntoView({behavior:"smooth",block:"start"}));
+function belirtiEkle(ids){ ids.forEach(k=>secili.add(k)); yaz("belirtiler",[...secili]); belirtiCiz(); sonucCiz(); }
+
+/* ================= ANA SEKMELER ================= */
+let aktifM="belirti";
+document.querySelectorAll(".mtab").forEach(t=>t.addEventListener("click",()=>{
+  aktifM=t.dataset.m;
+  document.querySelectorAll(".mtab").forEach(x=>x.setAttribute("aria-selected",x===t?"true":"false"));
+  ["belirti","telefon","rapor","kit"].forEach(m=>$("m-"+m).hidden = m!==aktifM);
+  if(aktifM==="kit" && window.kitApi) window.kitApi.demo();
+  if(aktifM==="rapor") raporGuncelle();
+  sonucCiz();
+}));
+
+/* ================= TELEFON TESTLERİ ================= */
+const testSonuc = oku("testler",{});
+function sensorHata(ne){
+  const u=$("sensorUyari"); u.hidden=false;
+  u.textContent = `${ne} bu ekranda kullanılamıyor. Testler, uygulamayı GitHub linkinizden telefonda açınca ve izin verince çalışır (Claude içindeki önizlemede çalışmaz).`;
+}
+function geriSay(el, sn){ el.hidden=false; let k=sn; el.textContent=k; const t=setInterval(()=>{ k--; el.textContent=k>0?k:""; if(k<=0){clearInterval(t); el.hidden=true;} },1000); return t; }
+
+/* --- Titreşim --- */
+let titCalisiyor=false;
+$("btnTit").addEventListener("click", async ()=>{
+  if(titCalisiyor) return;
+  if(typeof DeviceMotionEvent==="undefined"){ sensorHata("Hareket sensörü"); return; }
+  try{
+    if(typeof DeviceMotionEvent.requestPermission==="function"){
+      const r=await DeviceMotionEvent.requestPermission(); if(r!=="granted"){ sensorHata("Hareket sensörü (izin verilmedi)"); return; }
+    }
+  }catch(e){ sensorHata("Hareket sensörü"); return; }
+  titCalisiyor=true; $("btnTit").disabled=true; $("titSonuc").innerHTML="";
+  const ornek=[], sure=20, bas=performance.now();
+  let gx=0,gy=0,gz=0,ilk=true;
+  const dinle = ev=>{
+    let a=ev.acceleration, x,y,z;
+    if(a && a.x!=null){ x=a.x;y=a.y;z=a.z; }
+    else { const g=ev.accelerationIncludingGravity; if(!g||g.x==null) return;
+      if(ilk){gx=g.x;gy=g.y;gz=g.z;ilk=false} gx+=(g.x-gx)*0.02; gy+=(g.y-gy)*0.02; gz+=(g.z-gz)*0.02; x=g.x-gx;y=g.y-gy;z=g.z-gz; }
+    ornek.push([performance.now(),x,y,z]);
+  };
+  window.addEventListener("devicemotion",dinle);
+  geriSay($("titSayac"),sure);
+  setTimeout(()=>{ if(ornek.length<10){ window.removeEventListener("devicemotion",dinle); titBitir(); sensorHata("Hareket sensörü"); } },2500);
+  setTimeout(()=>{ window.removeEventListener("devicemotion",dinle); if(ornek.length>=10) titAnaliz(ornek, (performance.now()-bas)/1000); titBitir(); }, sure*1000);
+});
+function titBitir(){ titCalisiyor=false; $("btnTit").disabled=false; $("titSayac").hidden=true; }
+function titAnaliz(o, sure){
+  const n=o.length, fs=n/sure;
+  const ax=[0,1,2].map(i=>{ const v=o.map(r=>r[i+1]); const m=v.reduce((s,x)=>s+x,0)/n; return v.map(x=>x-m); });
+  let kt=0, tepe=0; for(let j=0;j<n;j++){ const b=Math.hypot(ax[0][j],ax[1][j],ax[2][j]); kt+=b*b; if(b>tepe) tepe=b; }
+  const rms=Math.sqrt(kt/n);
+  const vars=ax.map(a=>a.reduce((s,x)=>s+x*x,0)); const sig=ax[vars.indexOf(Math.max(...vars))];
+  let enF=0, enP=0; const fMax=Math.min(25, fs/2-0.5);
+  for(let f=1; f<=fMax; f+=0.25){ let re=0,im=0; for(let j=0;j<n;j++){ const t=j/fs; re+=sig[j]*Math.cos(2*Math.PI*f*t); im-=sig[j]*Math.sin(2*Math.PI*f*t);} const p=re*re+im*im; if(p>enP){enP=p;enF=f;} }
+  const hiz=Math.max(3,parseFloat($("titHiz").value)||15), tekerF=hiz/3.6/1.44;
+  const tekerUyum = enF>0 && (Math.abs(enF-tekerF)<0.3*tekerF || Math.abs(enF-2*tekerF)<0.3*tekerF);
+  const seviye = rms<0.5?"Düşük":rms<1.2?"Orta":"Yüksek";
+  let yorum, sinif, eklenecek=[];
+  if(seviye==="Düşük"){ yorum="Titreşim normal görünüyor."; sinif="ok"; }
+  else if(tekerUyum){ yorum=`Titreşim teker dönüşüyle aynı ritimde (yaklaşık ${tekerF.toFixed(1)} Hz). Teker balansı, jant, lastik veya aks rulmanı olası.`; sinif="uyari"; eklenecek=["f4"]; }
+  else { yorum="Titreşim yüksek ama teker ritminde değil. Motor takozu, kavrama balansı veya diferansiyel olası."; sinif="uyari"; eklenecek= seviye==="Yüksek"?["f4","t1"]:["f4"]; }
+  testSonuc.titresim={tarih:Date.now(), rms, tepe, enF, seviye, yorum, eklenecek};
+  yaz("testler",testSonuc); titCiz();
+}
+function titCiz(){
+  const s=testSonuc.titresim; if(!s){ $("titSonuc").innerHTML=""; return; }
+  $("titSonuc").innerHTML = `<div class="olcum"><div><span class="label">Seviye</span><b>${s.seviye}</b></div><div><span class="label">Ortalama</span><b>${s.rms.toFixed(2)} m/s²</b></div><div><span class="label">Baskın ritim</span><b>${s.enF?s.enF.toFixed(1)+" Hz":"—"}</b></div></div>
+   <p class="yorum ${s.seviye==="Düşük"?"ok":"uyari"}">${s.yorum}</p>
+   ${s.eklenecek.length?`<button class="btn" data-ekle="${s.eklenecek.join(",")}">Belirtilere ekle</button>`:""}`;
+}
+
+/* --- Ses --- */
+let sesCalisiyor=false;
+$("btnSes").addEventListener("click", async ()=>{
+  if(sesCalisiyor) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ sensorHata("Mikrofon"); return; }
+  let akis, ctx;
+  try{
+    ctx = new (window.AudioContext||window.webkitAudioContext)(); await ctx.resume();
+    akis = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){ if(ctx) ctx.close(); sensorHata("Mikrofon"); return; }
+  sesCalisiyor=true; $("btnSes").disabled=true; $("sesSonuc").innerHTML="";
+  const src=ctx.createMediaStreamSource(akis), an=ctx.createAnalyser(); an.fftSize=4096; an.smoothingTimeConstant=0; src.connect(an);
+  const fb=new Float32Array(an.frequencyBinCount), tb=new Float32Array(an.fftSize), guc=new Float64Array(an.frequencyBinCount), seviyeler=[];
+  let kare=0; const sure=10;
+  geriSay($("sesSayac"),sure);
+  const t=setInterval(()=>{
+    an.getFloatFrequencyData(fb); an.getFloatTimeDomainData(tb);
+    for(let i=0;i<fb.length;i++) guc[i]+=Math.pow(10,fb[i]/10);
+    let s=0; for(let i=0;i<tb.length;i++) s+=tb[i]*tb[i]; seviyeler.push(10*Math.log10(s/tb.length+1e-12)); kare++;
+  },100);
+  setTimeout(()=>{
+    clearInterval(t); akis.getTracks().forEach(x=>x.stop()); ctx.close();
+    sesCalisiyor=false; $("btnSes").disabled=false; $("sesSayac").hidden=true;
+    const hz=ctx.sampleRate/an.fftSize; let top=0, tiz=0, enP=0, enF=0;
+    for(let i=0;i<guc.length;i++){ const f=i*hz; if(f<50||f>8000) continue; top+=guc[i]; if(f>=2000) tiz+=guc[i]; if(f<=5000 && guc[i]>enP){enP=guc[i];enF=f;} }
+    const oran = top>0 ? tiz/top : 0;
+    const sirali=[...seviyeler].sort((a,b)=>a-b), med=sirali[Math.floor(sirali.length/2)];
+    const ort=seviyeler.reduce((a,b)=>a+b,0)/seviyeler.length, std=Math.sqrt(seviyeler.reduce((a,b)=>a+(b-ort)*(b-ort),0)/seviyeler.length);
+    let dusus=0; for(let i=1;i<seviyeler.length;i++) if(seviyeler[i]<med-8 && seviyeler[i-1]>=med-8) dusus++;
+    const sessiz = med < -55;
+    const notlar=[], ekle=[]; let sinif="ok";
+    if(sessiz) notlar.push("Ses çok düşük kaldı. Telefonu motora biraz daha yaklaştırıp tekrar deneyin.");
+    else {
+      if(oran>0.35){ notlar.push("Seste tiz ötme / cıyaklama payı yüksek. Kayış, kavrama veya dinamo kayışı olası."); ekle.push("s8"); sinif="uyari"; }
+      if(std>3 || dusus>=3){ notlar.push("Motor sesi düzensiz, kesik kesik. Tekleme olası (buji, karbüratör, yakıt)."); ekle.push("m3"); sinif="uyari"; }
+      if(!notlar.length) notlar.push("Ses dengeli görünüyor, belirgin ötme veya kesilme yok.");
+    }
+    testSonuc.ses={tarih:Date.now(), oran, std, dusus, enF, yorum:notlar.join(" "), sinif, eklenecek:ekle};
+    yaz("testler",testSonuc); sesCiz();
+  }, sure*1000);
+});
+function sesCiz(){
+  const s=testSonuc.ses; if(!s){ $("sesSonuc").innerHTML=""; return; }
+  $("sesSonuc").innerHTML = `<div class="olcum"><div><span class="label">Tiz ses payı</span><b>%${Math.round(s.oran*100)}</b></div><div><span class="label">Düzensizlik</span><b>${s.std.toFixed(1)} dB</b></div><div><span class="label">Baskın ses</span><b>${Math.round(s.enF)} Hz</b></div></div>
+   <p class="yorum ${s.sinif}">${s.yorum}</p>
+   ${s.eklenecek.length?`<button class="btn" data-ekle="${s.eklenecek.join(",")}">Belirtilere ekle</button>`:""}`;
+}
+$("m-telefon").addEventListener("click",e=>{ const b=e.target.closest("[data-ekle]"); if(!b) return; belirtiEkle(b.dataset.ekle.split(",")); b.textContent="Eklendi"; b.disabled=true; });
+
+/* ================= RAPOR ================= */
+const ALAN=["rPlaka","rMarka","rMusteri","rTel","rSaat","rNot"];
+const isletme=oku("isletme",{ad:"",tel:""});
+$("iAd").value=isletme.ad; $("iTel").value=isletme.tel;
+const taslak=oku("taslak",{}); ALAN.forEach(k=>$(k).value=taslak[k]||"");
+ALAN.forEach(k=>$(k).addEventListener("input",()=>{ const t={}; ALAN.forEach(a=>t[a]=$(a).value); yaz("taslak",t); raporGuncelle(); }));
+["iAd","iTel"].forEach(k=>$(k).addEventListener("input",()=>{ isletme.ad=$("iAd").value; isletme.tel=$("iTel").value; yaz("isletme",isletme); raporGuncelle(); }));
+
+function tarihYaz(t){ return new Date(t).toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
+function raporOlustur(){
+  const v=k=>$(k).value.trim(), sat=[];
+  sat.push("ARAÇ ARIZA TESPİT RAPORU");
+  if(isletme.ad||isletme.tel) sat.push([isletme.ad,isletme.tel].filter(Boolean).join(" · "));
+  sat.push("Tarih: "+tarihYaz(Date.now()));
+  sat.push("");
+  if(v("rPlaka")||v("rMarka")) sat.push("Araç: "+[v("rPlaka"),v("rMarka")].filter(Boolean).join(" – "));
+  if(v("rMusteri")) sat.push("Müşteri: "+v("rMusteri"));
+  if(v("rSaat")) sat.push("Çalışma saati / km: "+v("rSaat"));
+  if(secili.size){ sat.push(""); sat.push("Görülen belirtiler:"); [...secili].forEach(k=>sat.push("• "+BELIRTI_AD[k])); }
+  const l=adaylarHesapla();
+  if(l.length){ const top=l[0].p; sat.push(""); sat.push("Olası arızalar:"); l.slice(0,4).forEach((x,i)=>sat.push(`${i+1}. ${x.a.ad} (${etiket(x.p/top).toLowerCase()})`)); }
+  const T=testSonuc, testS=[];
+  if(T.titresim && Date.now()-T.titresim.tarih<6*3600e3) testS.push(`Titreşim: ${T.titresim.seviye.toLowerCase()} – ${T.titresim.yorum}`);
+  if(T.ses && Date.now()-T.ses.tarih<6*3600e3) testS.push(`Ses: ${T.ses.yorum}`);
+  if(testS.length){ sat.push(""); sat.push("Telefon testleri:"); testS.forEach(x=>sat.push("• "+x)); }
+  if(window.kitApi){ const k=window.kitApi.durum();
+    if(k.mod==="golf"||k.mod==="obd"){ sat.push(""); sat.push("Kit ölçümü:"); if(!k.akt.length && !k.kodlar.length) sat.push("• Ölçülen değerler normal");
+      k.akt.forEach(b=>sat.push(`• ${b.baslik} (${b.deger})`)); k.kodlar.forEach(c=>sat.push("• Arıza kodu "+c)); } }
+  if(v("rNot")){ sat.push(""); sat.push("Usta notu: "+v("rNot")); }
+  sat.push(""); sat.push("Not: Bu rapor ön teşhistir. Kesin sonuç için ilgili parçanın kontrolü gerekir.");
+  return sat.join("\n");
+}
+function telNo(t){ let d=(t||"").replace(/\D/g,""); if(d.startsWith("0")) d="90"+d.slice(1); else if(d.length===10 && d[0]==="5") d="90"+d; return d.length>=11?d:""; }
+function raporGuncelle(){
+  const m=raporOlustur(); $("raporMetin").textContent=m;
+  $("btnWa").href="https://wa.me/"+telNo($("rTel").value)+"?text="+encodeURIComponent(m);
+}
+$("btnKopya").addEventListener("click",()=>{
+  const m=$("raporMetin").textContent;
+  const sec=()=>{ const r=document.createRange(); r.selectNodeContents($("raporMetin")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $("raporNot").textContent="Metin seçildi, telefonun Kopyala seçeneğini kullanın."; };
+  try{ navigator.clipboard.writeText(m).then(()=>$("raporNot").textContent="Rapor kopyalandı.",sec); }catch(e){ sec(); }
+});
+let kayitlar=oku("kayitlar",[]);
+$("btnKaydet").addEventListener("click",()=>{
+  const v=k=>$(k).value.trim();
+  if(!v("rPlaka") && !v("rMusteri")){ $("raporNot").textContent="Kaydetmek için en az plaka veya müşteri adı yazın."; return; }
+  const l=adaylarHesapla();
+  const k={id:Date.now(), tarih:Date.now(), alan:Object.fromEntries(ALAN.map(a=>[a,$(a).value])), belirtiler:[...secili], ozet:l.length?l[0].a.ad:"", metin:raporOlustur()};
+  kayitlar.unshift(k); kayitlar=kayitlar.slice(0,300); yaz("kayitlar",kayitlar);
+  $("raporNot").textContent="Rapor kaydedildi."; kayitCiz();
+});
+$("btnYeni").addEventListener("click",()=>{
+  ALAN.forEach(a=>$(a).value=""); yaz("taslak",{}); secili.clear(); yaz("belirtiler",[]);
+  delete testSonuc.titresim; delete testSonuc.ses; yaz("testler",testSonuc);
+  belirtiCiz(); titCiz(); sesCiz(); sonucCiz(); $("raporNot").textContent="Yeni araç için form temizlendi.";
+});
+let silBekleyen=null;
+function kayitCiz(){
+  $("kayitlar").innerHTML = kayitlar.length ? kayitlar.map(k=>`<div class="kayit"><div class="bilgi"><div><span class="plaka">${esc(k.alan.rPlaka||"—")}</span> · ${esc(k.alan.rMarka||"")} ${k.alan.rMusteri?"· "+esc(k.alan.rMusteri):""}</div>
+     <div class="meta">${tarihYaz(k.tarih)}${k.ozet?" · "+esc(k.ozet):""}</div></div>
+     <div class="row"><button class="btn" data-ac="${k.id}">Aç</button><button class="btn danger" data-sil="${k.id}">${silBekleyen===k.id?"Emin misiniz?":"Sil"}</button></div></div>`).join("")
+   : `<div class="empty">Henüz kayıtlı rapor yok. Raporu doldurup "Kaydet"e basınca burada listelenir.</div>`;
+}
+$("kayitlar").addEventListener("click",e=>{
+  const ac=e.target.closest("[data-ac]"), sil=e.target.closest("[data-sil]");
+  if(ac){ const k=kayitlar.find(x=>x.id==ac.dataset.ac); if(!k) return;
+    ALAN.forEach(a=>$(a).value=k.alan[a]||""); yaz("taslak",k.alan);
+    secili=new Set((k.belirtiler||[]).filter(x=>BELIRTI_AD[x])); yaz("belirtiler",[...secili]); belirtiCiz(); sonucCiz();
+    $("raporNot").textContent="Kayıt açıldı. Değiştirip yeniden kaydedebilirsiniz."; window.scrollTo({top:0,behavior:"smooth"}); }
+  if(sil){ const id=+sil.dataset.sil;
+    if(silBekleyen!==id){ silBekleyen=id; kayitCiz(); setTimeout(()=>{ if(silBekleyen===id){silBekleyen=null;kayitCiz();} },4000); return; }
+    kayitlar=kayitlar.filter(x=>x.id!==id); silBekleyen=null; yaz("kayitlar",kayitlar); kayitCiz(); }
+});
+
+/* ================= BAŞLANGIÇ ================= */
+belirtiCiz(); titCiz(); sesCiz(); kayitCiz(); sonucCiz();
 })();
 </script>
